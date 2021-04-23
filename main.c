@@ -6,6 +6,8 @@
 * Just for inspiration :)
 */
 
+#include <hih8120.h>
+
 #include <stdio.h>
 #include <avr/io.h>
 
