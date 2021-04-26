@@ -1,9 +1,3 @@
-/*
-* loraWANHandler.c
-*
-* Created: 12/04/2019 10:09:05
-*  Author: IHA
-*/
 #include <stddef.h>
 #include <stdio.h>
 
@@ -17,8 +11,6 @@
 #define LORA_appKEY "1D2EB57B831FBDEF807978AE930786E4"
 
 static char _out_buf[100];
-
-void lora_handler_task( void *pvParameters );
 
 static lora_driver_payload_t _uplink_payload;
 
@@ -119,7 +111,7 @@ void lora_handler_task( void *pvParameters )
 
 	_lora_setup();
 
-	_uplink_payload.len = 6;
+	_uplink_payload.len = 10;
 	_uplink_payload.portNo = 2;
 
 	TickType_t xLastWakeTime;
