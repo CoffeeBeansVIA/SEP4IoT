@@ -1,5 +1,3 @@
-#include <hih8120.h>
-
 #include <stdio.h>
 #include <avr/io.h>
 
@@ -9,6 +7,8 @@
 
 #include <stdio_driver.h>
 #include <serial.h>
+
+#include <hih8120.h>
 
 // Needed for LoRaWAN
 #include <lora_driver.h>
@@ -28,8 +28,14 @@ void UL_handler_receive( void *pvParameters );
 SemaphoreHandle_t xTestSemaphore;
 
 // Prototype for LoRaWAN handler
-void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer )
+void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer );
 //void lora_handler_initialise(UBaseType_t lora_handler_task_priority);
+
+// MessageBuffers
+const int UpLinkSize = sizeof(SensorDataPackage_t)*2;
+const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
+MessageBufferHandle_t UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
+MessageBufferHandle_t DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
 
 /*-----------------------------------------------------------*/
 void create_tasks_and_semaphores(void)
@@ -106,12 +112,10 @@ void UL_handler_send( void *pvParameters )
 			// The call to xMessageBufferSend() timed out before there was enough space in the buffer for the data to be written.
 			// Wait 2.5 minutes to retry
 			vTaskDelay(pdMS_TO_TICKS(150000));
-			UL_handler_send();
 		}else{
 			// OK
 			puts("UL_handler_send -> OK");
 			vTaskDelay(pdMS_TO_TICKS(300000));
-			UL_handler_send();
 		}	
 	}
 }
@@ -119,6 +123,7 @@ void UL_handler_send( void *pvParameters )
 /*-----------------------------------------------------------*/
 void initialiseSystem()
 {
+	
 	// Set output ports for LEDs used in the example
 	DDRA |= _BV(DDA0) | _BV(DDA7);
 
@@ -130,10 +135,6 @@ void initialiseSystem()
 	// LoRaWAN initialization
 	// Status LEDs driver
 	status_leds_initialise(5); // Priority 5 for internal task
-	
-	// MessageBuffers
-	MessageBufferHandle_t UpLinkMessageBuffer = xMessageBufferCreate(sizeof(SensorDataPackage_t)*2);
-	MessageBufferHandle_t DownLinkMessageBuffer = xMessageBufferCreate(sizeof(lora_driver_payload_t)*2);
 	
 	// Initialize the LoRaWAN driver with down-link buffer
 	lora_driver_initialise(1, DownLinkMessageBuffer);

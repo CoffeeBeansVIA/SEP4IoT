@@ -1,8 +1,17 @@
 #include <lora_driver.h>
 #include <message_buffer.h>
+#include <status_leds.h>
+#include "SensorDataPackage.h"
 
-private MessageBufferHandle_t uplinkMessageBuffer; 
 static lora_driver_payload_t uplink_payload;
+MessageBufferHandle_t uplinkMessageBuffer;
+
+ static void _lora_setup(void);
+// Parameters for OTAA join - You have got these in a mail from IHA
+#define LORA_appEUI "926F9B5931FCA94C"
+#define LORA_appKEY "1D2EB57B831FBDEF807978AE930786E4"
+
+static char _out_buf[100];
 
 void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 	// Hardware reset of LoRaWAN transceiver
@@ -21,35 +30,47 @@ void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 
  void UL_handler_receive( void *pvParameters )
  {
-  SensorDataPackage_t sensorDataPackage;
-  size_t xReceivedBytes;
-  const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
 
-   // Receive next message from the UL message buffer. Wait for a maximum of 100ms for a message to become available.
-   xReceivedBytes = xMessageBufferReceive( uplinkMessageBuffer,
-                                           ( void * ) sensorDataPackage,
-                                           sizeof( SensorDataPackage_t ),
-                                           xBlockTime );
- 
-   if( xReceivedBytes > 0 )
-   {
-	   // The sensorDataPackage contains the message to be transmitted. Serialize it here and send it using LoRaWan.
-	   puts("UL_handler_receive -> OK")
-	   puts(xReceivedBytes);
-	   
-	   uint16_t co2_ppm = SensorDataPackage_getCO2(sensorDataPackage);
-	   
-	   _uplink_payload.bytes[0] = co2_ppm >> 8;
-	   _uplink_payload.bytes[1] = co2_ppm & 0xFF;
+	for(;;){
+		  SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
+		  
+		  size_t xReceivedBytes;
+		  const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
 
-	   status_leds_shortPuls(led_ST4);  // OPTIONAL
-	   printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
-		
-   }else{
-	   // Wait 2.5 minutes to retry
-	   vTaskDelay(pdMS_TO_TICKS(150000));
-	   UL_handler_receive();
-   }
+		  // Receive next message from the UL message buffer. Wait for a maximum of 100ms for a message to become available.
+		  xReceivedBytes = xMessageBufferReceive( uplinkMessageBuffer,
+		  ( void * ) sensorDataPackage,
+		  sizeof( SensorDataPackage_t ),
+		  xBlockTime );
+		  
+		  if( xReceivedBytes > 0 )
+		  {
+			  // The sensorDataPackage contains the message to be transmitted. Serialize it here and send it using LoRaWan.
+			  puts("UL_handler_receive -> OK");
+			  puts(xReceivedBytes);
+			  
+			  // take the data out of the packet
+			  uint16_t co2_ppm = SensorDataPackage_getCO2(sensorDataPackage);
+			  
+			  // free up memory
+			  SensorDataPackage_free(sensorDataPackage);
+			  
+			  
+			  lora_driver_payload_t _uplink_payload;
+			  
+			  _uplink_payload.bytes[0] = co2_ppm >> 8;
+			  _uplink_payload.bytes[1] = co2_ppm & 0xFF;
+			  _uplink_payload.len = 2;
+
+			  status_leds_shortPuls(led_ST4);  // OPTIONAL
+			  printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
+			  vTaskDelay(pdMS_TO_TICKS(300000));
+			  }else{
+			  // Wait 2.5 minutes to retry
+			  vTaskDelay(pdMS_TO_TICKS(150000));
+		  }		
+	}
+
  }
  
  static void _lora_setup(void)
