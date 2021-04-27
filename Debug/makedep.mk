@@ -28,5 +28,7 @@ FreeRTOS\src\timers.c
 
 FreeRTOS\src\variantHooks.c
 
+LoRaWANHandler.c
+
 main.c
 
