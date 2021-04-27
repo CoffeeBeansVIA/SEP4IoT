@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include "FreeRTOS.h"
-#include "task.h"
+#include <ATMEGA_FreeRTOS.h>
+#include <task.h>
 #include <mh_z19.h>
 #include <time.h>
-#include "event_groups.h"
+#include <event_groups.h>
 
 /*
  * co2Sensor.c
@@ -12,18 +12,15 @@
  *  Author: tanki
  */ 
 
-
+void mh_z19_callBack(uint16_t ppm);
 uint16_t lastCO2ppm;
 mh_z19_returnCode_t rc;
 
-EventGroupHandle_t xMeasureEventGroup;
-EventGroupHandle_t xDataReadyEventGroup;
+EventGroupHandle_t measureEventGroup;
+EventGroupHandle_t readyEventGroup;
 
-xMeasureEventGroup = xEventGroupCreate();
-xDataReadyEventGroup = xEventGroupCreate();
-
-
-xEventGroupWaitBits();
+#define BIT_TASK_CO2_MEASURE (1 << 0)
+#define BIT_TASK_CO2_READY (1 << 1)
  
 
 void create(void* pvParameters){
@@ -34,16 +31,29 @@ void create(void* pvParameters){
 	
 } 
 
-void mh_z19_callBack(uint16_t ppm){
-	
-	waitFor(1);
-	rc = mh_z19_takeMeassuring();
-	if (rc != mh_z19_returnCode_t.MHZ19_OK)
-	{
-		puts("something went wrong in co2Sensor")
-		// Something went wrong
+void co2sensorTask(void* pvParameters)
+{
+	(void)pvParameters;
+	while(1){
+		xEventGroupWaitBits(
+		measureEventGroup,
+		BIT_TASK_CO2_MEASURE,
+		pdTRUE,
+		pdTRUE,
+		portMAX_DELAY);
+		
+		rc = mh_z19_takeMeassuring();
+		if (rc != MHZ19_OK)
+		{
+			puts("something went wrong in co2Sensor");
+			// Something went wrong
+		}
 	}
+}
+
+void mh_z19_callBack(uint16_t ppm){
 	lastCO2ppm = ppm;
+	xEventGroupSetBits(readyEventGroup,BIT_TASK_CO2_READY);
 }
 
 uint16_t getCO2(){

@@ -17,6 +17,9 @@
 // MISC includes
 #include "SensorDataPackage.h"
 
+//event groups
+#include <event_groups.h>
+
 /*-----------------------------------------------------------*/
 
 // define Tasks
@@ -36,6 +39,13 @@ const int UpLinkSize = sizeof(SensorDataPackage_t)*2;
 const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
 MessageBufferHandle_t UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
 MessageBufferHandle_t DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
+
+//Event groups 
+EventGroupHandle_t measureEventGroup = NULL;
+#define BIT_TASK_CO2_MEASURE (1<<0)
+EventGroupHandle_t readyEventGroup = NULL;
+#define BIT_TASK_CO2_READY (1<<1)
+
 
 /*-----------------------------------------------------------*/
 void create_tasks_and_semaphores(void)
@@ -93,7 +103,24 @@ void task1( void *pvParameters )
 		PORTA ^= _BV(PA0);
 	}
 }
-
+/*-----------------------------------------------------------*/
+void measureCo2task( void *pvParameters )
+{
+	
+	for(;;)
+	{
+		vTaskDelay(pdMS_TO_TICKS(300000));
+		xEventGroupSetBits(measureEventGroup,BIT_TASK_CO2_MEASURE);
+		
+		//wait for ready bits from sensors(later when there will be more sensors it will have to handle different situations(see class diagram video))
+		xEventGroupWaitBits(
+		readyEventGroup,
+		BIT_TASK_CO2_READY,
+		pdTRUE,
+		pdTRUE,
+		portMAX_DELAY);
+	}
+}
 /*-----------------------------------------------------------*/
 
 void UL_handler_send( void *pvParameters )
@@ -145,6 +172,10 @@ void initialiseSystem()
 	
 	// UpLinkHandler
 	UL_handler_create(UpLinkMessageBuffer);
+	
+	//Event group
+	measureEventGroup = xEventGroupCreate();
+	readyEventGroup = xEventGroupCreate();
 	
 }
 
