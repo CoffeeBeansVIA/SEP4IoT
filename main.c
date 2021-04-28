@@ -37,8 +37,8 @@ void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer );
 // MessageBuffers
 const int UpLinkSize = sizeof(SensorDataPackage_t)*2;
 const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
-MessageBufferHandle_t UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
-MessageBufferHandle_t DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
+MessageBufferHandle_t UpLinkMessageBuffer = NULL;
+MessageBufferHandle_t DownLinkMessageBuffer = NULL;
 
 //Event groups 
 EventGroupHandle_t measureEventGroup = NULL;
@@ -158,6 +158,10 @@ void initialiseSystem()
 	stdio_initialise(ser_USART0);
 	// Let's create some tasks
 	create_tasks_and_semaphores();
+	
+	//Message Buffers
+	UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
+	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
 
 	// LoRaWAN initialization
 	// Status LEDs driver
