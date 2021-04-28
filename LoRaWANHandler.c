@@ -1,9 +1,3 @@
-/*
-* loraWANHandler.c
-*
-* Created: 12/04/2019 10:09:05
-*  Author: IHA
-*/
 #include <stddef.h>
 #include <stdio.h>
 
@@ -18,9 +12,9 @@
 
 static char _out_buf[100];
 
-void lora_handler_task( void *pvParameters );
-
 static lora_driver_payload_t _uplink_payload;
+
+void lora_handler_task( void *pvParameters );
 
 void lora_handler_initialise(UBaseType_t lora_handler_task_priority)
 {
@@ -32,7 +26,7 @@ void lora_handler_initialise(UBaseType_t lora_handler_task_priority)
 	,  lora_handler_task_priority  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
 	,  NULL );
 }
-
+/*
 static void _lora_setup(void)
 {
 	lora_driver_returnCode_t rc;
@@ -104,7 +98,7 @@ static void _lora_setup(void)
 		}
 	}
 }
-
+*/
 /*-----------------------------------------------------------*/
 void lora_handler_task( void *pvParameters )
 {
@@ -119,7 +113,7 @@ void lora_handler_task( void *pvParameters )
 
 	_lora_setup();
 
-	_uplink_payload.len = 6;
+	_uplink_payload.len = 10;
 	_uplink_payload.portNo = 2;
 
 	TickType_t xLastWakeTime;
