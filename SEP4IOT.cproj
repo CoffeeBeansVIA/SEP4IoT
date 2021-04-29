@@ -182,6 +182,15 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Configuration.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SensorDataPackage.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SensorDataPackage.h">
+      <SubType>compile</SubType>
+    </Compile>
     <None Include="FreeRTOS\Example\main.c">
       <SubType>compile</SubType>
     </None>

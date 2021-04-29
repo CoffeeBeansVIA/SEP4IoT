@@ -1,12 +1,14 @@
+#include "ATMEGA_FreeRTOS.h"
 #include "semphr.h"
-SemaphoreHandle_t temperatureMutex;
-SemaphoreHandle_t co2Mutex;
-SemaphoreHandle_t humidityMutex;
-void create(){
-	temperatureMutex= xSemaphoreCreateMutex();
-	co2Mutex= xSemaphoreCreateMutex();
-	humidityMutex= xSemaphoreCreateMutex();
+#include "Configuration.h"
+
+
+void create_configuration(){
+	temperatureMutex = xSemaphoreCreateMutex();
+	co2Mutex = xSemaphoreCreateMutex();
+	humidityMutex = xSemaphoreCreateMutex();
 }
+
 SemaphoreHandle_t setTemperature(SemaphoreHandle_t source)
 {
 	temperatureMutex = source;
