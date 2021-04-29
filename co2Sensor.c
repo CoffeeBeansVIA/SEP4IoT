@@ -19,16 +19,23 @@ mh_z19_returnCode_t rc;
 EventGroupHandle_t measureEventGroup;
 EventGroupHandle_t readyEventGroup;
 
+void co2sensorTask(void* pvParameters);
 #define BIT_TASK_CO2_MEASURE (1 << 0)
 #define BIT_TASK_CO2_READY (1 << 1)
  
 
-void create(void* pvParameters){
-	(void)pvParameters;
+void CO2_handler_create(){
 		// The parameter is the USART port the MH-Z19 sensor is connected to - in this case USART3
 		mh_z19_initialise(ser_USART3);
 		mh_z19_injectCallBack(mh_z19_callBack);
 	
+	xTaskCreate(
+	co2sensorTask
+	,  "CO2 Sensor Task"  // A name just for humans
+	,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack High water
+	,  NULL 
+	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+	,  NULL );
 } 
 
 void co2sensorTask(void* pvParameters)
