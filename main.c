@@ -1,14 +1,12 @@
 #include <stdio.h>
 #include <avr/io.h>
-
 #include <ATMEGA_FreeRTOS.h>
 #include <task.h>
 #include <semphr.h>
-
 #include <stdio_driver.h>
 #include <serial.h>
-
 #include <hih8120.h>
+#include <event_groups.h>
 
 // Needed for LoRaWAN
 #include <lora_driver.h>
@@ -17,27 +15,27 @@
 // MISC includes
 #include "SensorDataPackage.h"
 
-//event groups
-#include <event_groups.h>
-
 /*-----------------------------------------------------------*/
 
-// define Tasks
-void task1( void *pvParameters );
+// Prototypes
+void UL_handler_create( MessageBufferHandle_t _uplinkMessageBuffer );
+void measureCo2task( void *pvParameters );
+void CO2_handler_create();
 void UL_handler_send( void *pvParameters );
 void UL_handler_receive( void *pvParameters );
 
-// define semaphore handle
+// define semaphores
 SemaphoreHandle_t xTestSemaphore;
-SemaphoreHandle_t putsMutex;
+SemaphoreHandle_t measureCo2Mutex;
 SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
+SemaphoreHandle_t putsMutex;
 
-// Prototypes
-void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer );
-void measureCo2task( void *pvParameters );
-void CO2_handler_create();
-//void lora_handler_initialise(UBaseType_t lora_handler_task_priority);
+//Event groups
+EventGroupHandle_t measureEventGroup = NULL;
+#define BIT_TASK_CO2_MEASURE (1<<0)
+EventGroupHandle_t readyEventGroup = NULL;
+#define BIT_TASK_CO2_READY (1<<1)
 
 // MessageBuffers
 const int UpLinkSize = sizeof(SensorDataPackage_t)*2;
@@ -45,20 +43,12 @@ const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
 MessageBufferHandle_t UpLinkMessageBuffer = NULL;
 MessageBufferHandle_t DownLinkMessageBuffer = NULL;
 
-//Event groups 
-EventGroupHandle_t measureEventGroup = NULL;
-#define BIT_TASK_CO2_MEASURE (1<<0)
-EventGroupHandle_t readyEventGroup = NULL;
-#define BIT_TASK_CO2_READY (1<<1)
-
-
 /*-----------------------------------------------------------*/
 
 void mutexPuts(char* str){
 	if(xSemaphoreTake(putsMutex, portMAX_DELAY) == pdTRUE){
 		puts(str);
 		xSemaphoreGive(putsMutex);
-		
 	}
 }
 
@@ -66,12 +56,19 @@ void mutexPuts(char* str){
 void create_tasks_and_semaphores(void)
 {
 	// Semaphores initialization
-	if ( NULL == UpLinkSendMutex ){   // Check to confirm that the Semaphore has not already been created.
-		UpLinkSendMutex = xSemaphoreCreateMutex();  // Create a mutex semaphore.
+	if(NULL == measureCo2Mutex){
+		measureCo2Mutex = xSemaphoreCreateMutex();
+		xSemaphoreTake(measureCo2Mutex, portMAX_DELAY);
+	}
+	
+	if ( NULL == UpLinkSendMutex ){  
+		UpLinkSendMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake(UpLinkSendMutex, portMAX_DELAY);
 	}
 	
 	if(NULL == UpLinkReceiveMutex){
 		UpLinkReceiveMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
 	}
 	
 	if(NULL == putsMutex){
@@ -79,35 +76,30 @@ void create_tasks_and_semaphores(void)
 		xSemaphoreGive( putsMutex );
 	}
 	
+	xTaskCreate(
+	measureCo2task
+	,  "Measure CO2"
+	,  configMINIMAL_STACK_SIZE
+	,  NULL
+	,  3
+	,  NULL );
 	
-	if ( UpLinkSendMutex  != NULL ){
-		xSemaphoreGive( UpLinkSendMutex );  // Make the mutex available for use, by initially "Giving" the Semaphore.
-	}
-
 	xTaskCreate(
 	UL_handler_send
 	,  "UpLink Handler Send"  // A name just for humans
 	,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack High water
-	,  NULL 
+	,  NULL  // Params
 	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
 	,  NULL );
 	
 	xTaskCreate(
 	UL_handler_receive
-	,  "UpLink Handler Receive"  // A name just for humans
-	,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack High water
+	,  "UpLink Handler Receive" 
+	,  configMINIMAL_STACK_SIZE
 	,  NULL
-	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+	,  3 
 	,  NULL );
 	
-	
-	xTaskCreate(
-	measureCo2task
-	,  "Measure CO2"  // A name just for humans
-	,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack High water
-	,  NULL
-	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-	,  NULL );
 }
 
 /*-----------------------------------------------------------*/
@@ -127,12 +119,13 @@ void task1( void *pvParameters )
 	}
 }
 /*-----------------------------------------------------------*/
+
 void measureCo2task( void *pvParameters )
 {
 	CO2_handler_create();
 	for(;;)
 	{
-		//vTaskDelay(pdMS_TO_TICKS(300000));
+		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
 		xEventGroupSetBits(measureEventGroup,BIT_TASK_CO2_MEASURE);
 		
 		//wait for ready bits from sensors(later when there will be more sensors it will have to handle different situations(see class diagram video))
@@ -146,18 +139,17 @@ void measureCo2task( void *pvParameters )
 		char buf[10];
 		sprintf(buf, "CO2 Measurement: %d", getCO2());
 		mutexPuts(buf);
+		xSemaphoreGive(measureCo2Mutex);
 	}
 }
 /*-----------------------------------------------------------*/
 
 void UL_handler_send( void *pvParameters )
 {
-	// Will only be executed one time
-		// UpLinkHandler
 	UL_handler_create(UpLinkMessageBuffer);
 	
 	for(;;){
-		xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
+		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
 		// Payload
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create(); 
@@ -179,9 +171,7 @@ void UL_handler_send( void *pvParameters )
 			// OK
 			mutexPuts("UL_handler_send -> OK");
 			SensorDataPackage_free(sensorDataPackage);
-			xSemaphoreGive( UpLinkSendMutex );
-			xSemaphoreGive( UpLinkReceiveMutex );
-			vTaskDelay(pdMS_TO_TICKS(300000));
+			xSemaphoreGive(UpLinkSendMutex);
 		}	
 	}
 }
@@ -197,6 +187,10 @@ void initialiseSystem()
 	// Let's create some tasks
 	create_tasks_and_semaphores();
 	
+	//Event groups
+	measureEventGroup = xEventGroupCreate();
+	readyEventGroup = xEventGroupCreate();
+	
 	//Message Buffers
 	UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
 	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
@@ -209,12 +203,6 @@ void initialiseSystem()
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-
-	
-	//Event group
-	measureEventGroup = xEventGroupCreate();
-	readyEventGroup = xEventGroupCreate();
-	
 }
 
 /*-----------------------------------------------------------*/
@@ -222,7 +210,7 @@ int main(void)
 {
 	initialiseSystem(); // Must be done as the very first thing!!
 	printf("Program Started!!\n");
-	
+	xSemaphoreGive(UpLinkReceiveMutex);
 	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler.
 	//Execution will never reach here.
 }

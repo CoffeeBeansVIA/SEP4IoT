@@ -39,7 +39,7 @@ void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 
 	for(;;){
 		
-		xSemaphoreTake( UpLinkReceiveMutex , portMAX_DELAY); // Wait for the ReceiveMutex
+		xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
 		
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
 		  
@@ -74,9 +74,8 @@ void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 
 			status_leds_shortPuls(led_ST4);  // OPTIONAL
 			printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
-			xSemaphoreGive( UpLinkReceiveMutex );
-			xSemaphoreGive( UpLinkSendMutex );
-			vTaskDelay(pdMS_TO_TICKS(300000));
+			vTaskDelay(300000);
+			xSemaphoreGive(UpLinkReceiveMutex);
 		}else{
 			// Wait 2.5 minutes to retry
 			vTaskDelay(pdMS_TO_TICKS(150000));

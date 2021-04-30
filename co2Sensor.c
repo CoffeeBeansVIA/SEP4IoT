@@ -5,13 +5,6 @@
 #include <time.h>
 #include <event_groups.h>
 
-/*
- * co2Sensor.c
- *
- * Created: 23/04/2021 14.41.21
- *  Author: tanki
- */ 
-
 void mh_z19_callBack(uint16_t ppm);
 uint16_t lastCO2ppm;
 mh_z19_returnCode_t rc;
@@ -25,9 +18,9 @@ void co2sensorTask(void* pvParameters);
  
 
 void CO2_handler_create(){
-		// The parameter is the USART port the MH-Z19 sensor is connected to - in this case USART3
-		mh_z19_initialise(ser_USART3);
-		mh_z19_injectCallBack(mh_z19_callBack);
+	// The parameter is the USART port the MH-Z19 sensor is connected to - in this case USART3
+	mh_z19_initialise(ser_USART3);
+	mh_z19_injectCallBack(mh_z19_callBack);
 	
 	xTaskCreate(
 	co2sensorTask
