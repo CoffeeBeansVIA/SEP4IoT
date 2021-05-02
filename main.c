@@ -80,7 +80,7 @@ void create_message_buffers(void){
 	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
 }
 
-void create_tasks(void){
+void create_tasks(void){	
 	xTaskCreate(
 	trigger_CO2_measurement_task
 	,  "Trigger CO2 Measurement Task"
@@ -146,6 +146,7 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 	for(;;)
 	{
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
+		xEventGroupClearBits(readyEventGroup,BIT_TASK_CO2_READY);
 		xEventGroupSetBits(measureEventGroup,BIT_TASK_CO2_MEASURE);
 		
 		//wait for ready bits from sensors(later when there will be more sensors it will have to handle different situations(see class diagram video))
@@ -156,6 +157,7 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 		pdTRUE,
 		portMAX_DELAY);
 		
+		xEventGroupClearBits(measureEventGroup,BIT_TASK_CO2_MEASURE);
 		char buf[63];
 		sprintf(buf, "CO2 Measurement: %d", getCO2());
 		mutexPuts(buf);
@@ -164,7 +166,7 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 }
 
 void UL_handler_send( void *pvParameters )
-{	
+{
 	for(;;){
 		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
@@ -184,11 +186,11 @@ void UL_handler_send( void *pvParameters )
 			// Wait 2.5 minutes to retry
 			SensorDataPackage_free(sensorDataPackage);
 			vTaskDelay(pdMS_TO_TICKS(150000));
-			}else{
+		}else{
 			// OK
 			mutexPuts("UL_handler_send -> OK");
 			SensorDataPackage_free(sensorDataPackage);
-			xSemaphoreGive(UpLinkReceiveMutex);
+			xSemaphoreGive(UpLinkSendMutex);
 		}
 	}
 }

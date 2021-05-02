@@ -43,11 +43,14 @@ void co2sensorTask(void* pvParameters)
 		portMAX_DELAY);
 		
 		rc = mh_z19_takeMeassuring();
-		if (rc != MHZ19_OK)
+		mh_z19_getCo2Ppm(&lastCO2ppm);
+		xEventGroupSetBits(readyEventGroup,BIT_TASK_CO2_READY);
+		
+		/*if (rc != MHZ19_OK)
 		{
 			puts("something went wrong in co2Sensor");
 			// Something went wrong
-		}
+		}*/
 	}
 }
 

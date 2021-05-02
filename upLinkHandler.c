@@ -91,7 +91,7 @@ void UL_handler_receive( void *pvParameters )
 			 xSemaphoreGive(UpLinkReceiveMutex);
 			 }else{
 			 // Wait 2.5 minutes to retry
-			 vTaskDelay(pdMS_TO_TICKS(150000));
+			// vTaskDelay(pdMS_TO_TICKS(150000));
 		 }
 	 }
 
