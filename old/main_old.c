@@ -1,4 +1,3 @@
-/*------------------------INCLUDES------------------------*/
 #include <stdio.h>
 #include <avr/io.h>
 #include <ATMEGA_FreeRTOS.h>
@@ -8,6 +7,7 @@
 #include <serial.h>
 #include <hih8120.h>
 #include <event_groups.h>
+
 // Needed for LoRaWAN
 #include <lora_driver.h>
 #include <status_leds.h>
@@ -15,15 +15,23 @@
 // MISC includes
 #include "SensorDataPackage.h"
 
-/*------------------------DEFINES------------------------*/
-// Mutexes
-SemaphoreHandle_t sysInitMutex;
+/*-----------------------------------------------------------*/
+
+// Prototypes
+void UL_handler_create( MessageBufferHandle_t _uplinkMessageBuffer );
+void trigger_CO2_measurement_task( void *pvParameters );
+void CO2_handler_create();
+void UL_handler_send( void *pvParameters );
+void UL_handler_receive( void *pvParameters );
+
+// define semaphores
+SemaphoreHandle_t xTestSemaphore;
 SemaphoreHandle_t measureCo2Mutex;
 SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 
-// Event groups
+//Event groups
 EventGroupHandle_t measureEventGroup = NULL;
 #define BIT_TASK_CO2_MEASURE (1<<0)
 EventGroupHandle_t readyEventGroup = NULL;
@@ -35,25 +43,25 @@ const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
 MessageBufferHandle_t UpLinkMessageBuffer = NULL;
 MessageBufferHandle_t DownLinkMessageBuffer = NULL;
 
-// Tasks & functions
-void trigger_CO2_measurement_task( void *pvParameters );
-void UL_handler_send( void *pvParameters );
-uint16_t getCO2();
+/*-----------------------------------------------------------*/
 
-/*-----------------------PROCEDURES----------------------*/
-void create_semaphores(void){
-	// Semaphores initialization
-	if(NULL == sysInitMutex){
-		sysInitMutex = xSemaphoreCreateMutex();
-		xSemaphoreGive(sysInitMutex);
+void mutexPuts(char* str){
+	if(xSemaphoreTake(putsMutex, portMAX_DELAY) == pdTRUE){
+		puts(str);
+		xSemaphoreGive(putsMutex);
 	}
-	
+}
+
+
+void create_tasks_and_semaphores(void)
+{
+	// Semaphores initialization
 	if(NULL == measureCo2Mutex){
 		measureCo2Mutex = xSemaphoreCreateMutex();
 		xSemaphoreTake(measureCo2Mutex, portMAX_DELAY);
 	}
 	
-	if ( NULL == UpLinkSendMutex ){
+	if ( NULL == UpLinkSendMutex ){  
 		UpLinkSendMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake(UpLinkSendMutex, portMAX_DELAY);
 	}
@@ -68,22 +76,9 @@ void create_semaphores(void){
 		xSemaphoreGive( putsMutex );
 	}
 	
-}
-
-void create_event_groups(void){
-	measureEventGroup = xEventGroupCreate();
-	readyEventGroup = xEventGroupCreate();
-}
-
-void create_message_buffers(void){
-	UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
-	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
-}
-
-void create_tasks(void){
 	xTaskCreate(
 	trigger_CO2_measurement_task
-	,  "Trigger CO2 Measurement Task"
+	,  "Measure CO2"
 	,  configMINIMAL_STACK_SIZE
 	,  NULL
 	,  3
@@ -97,52 +92,37 @@ void create_tasks(void){
 	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
 	,  NULL );
 	
+	xTaskCreate(
+	UL_handler_receive
+	,  "UpLink Handler Receive" 
+	,  configMINIMAL_STACK_SIZE
+	,  NULL
+	,  3 
+	,  NULL );
+	
 }
 
-/*-------------------------------------------------------*/
+/*-----------------------------------------------------------*/
+void task1( void *pvParameters )
+{
+	TickType_t xLastWakeTime;
+	const TickType_t xFrequency = 500/portTICK_PERIOD_MS; // 500 ms
 
-void mutexPuts(char* str){
-	if(xSemaphoreTake(putsMutex, portMAX_DELAY) == pdTRUE){
-		puts(str);
-		xSemaphoreGive(putsMutex);
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+
+	for(;;)
+	{
+		xTaskDelayUntil( &xLastWakeTime, xFrequency );
+		mutexPuts("Task1"); // stdio functions are not reentrant - Should normally be protected by MUTEX
+		PORTA ^= _BV(PA0);
 	}
 }
+/*-----------------------------------------------------------*/
 
-void initialiseSystem( void *pvParameters ){
-	create_semaphores();
-
-	xSemaphoreTake(sysInitMutex, portMAX_DELAY);
-	
-	// Set output ports for LEDs used in the example
-	DDRA |= _BV(DDA0) | _BV(DDA7);
-
-	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
-	stdio_initialise(ser_USART0);
-	
-	create_event_groups();
-	
-	create_message_buffers();
-
-	// LoRaWAN initialization
-	// Status LEDs driver
-	status_leds_initialise(5); // Priority 5 for internal task
-	
-	// Initialize the LoRaWAN driver with down-link buffer
-	lora_driver_initialise(1, DownLinkMessageBuffer);
-	// Create LoRaWAN task and start it up with priority 3
-	
-	UL_handler_create(UpLinkMessageBuffer);
-	
+void trigger_CO2_measurement_task( void *pvParameters )
+{
 	CO2_handler_create();
-	
-	xSemaphoreGive(sysInitMutex);
-	mutexPuts("Program Started!!\n");
-	xSemaphoreGive(UpLinkReceiveMutex);
-	create_tasks();
-}
-
-void trigger_CO2_measurement_task( void *pvParameters ){
-	
 	for(;;)
 	{
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
@@ -156,25 +136,28 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 		pdTRUE,
 		portMAX_DELAY);
 		
-		char buf[63];
+		char buf[10];
 		sprintf(buf, "CO2 Measurement: %d", getCO2());
 		mutexPuts(buf);
 		xSemaphoreGive(measureCo2Mutex);
 	}
 }
+/*-----------------------------------------------------------*/
 
 void UL_handler_send( void *pvParameters )
-{	
+{
+	UL_handler_create(UpLinkMessageBuffer);
+	
 	for(;;){
 		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
 		// Payload
-		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
+		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create(); 
 		
-		SensorDataPackage_setCO2(sensorDataPackage,getCO2());/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
+		SensorDataPackage_setCO2(sensorDataPackage,250);/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
 		
 		const TickType_t x100ms = pdMS_TO_TICKS( 100 );
-		
+	
 		// Send the payload to the message buffer, a maximum of 100ms to wait for enough space to be available in the message buffer.
 		xBytesSent = xMessageBufferSend( UpLinkMessageBuffer, ( void * ) sensorDataPackage, sizeof( sensorDataPackage ), x100ms );
 		
@@ -184,26 +167,51 @@ void UL_handler_send( void *pvParameters )
 			// Wait 2.5 minutes to retry
 			SensorDataPackage_free(sensorDataPackage);
 			vTaskDelay(pdMS_TO_TICKS(150000));
-			}else{
+		}else{
 			// OK
 			mutexPuts("UL_handler_send -> OK");
 			SensorDataPackage_free(sensorDataPackage);
-			xSemaphoreGive(UpLinkReceiveMutex);
-		}
+			xSemaphoreGive(UpLinkSendMutex);
+		}	
 	}
 }
 
-/*---------------------------MAIN----------------------------*/
+/*-----------------------------------------------------------*/
+void initialiseSystem()
+{
+	// Set output ports for LEDs used in the example
+	DDRA |= _BV(DDA0) | _BV(DDA7);
 
-int main(void){
-	xTaskCreate(
-	initialiseSystem // Must be done as the very first thing!!
-	,  "Initialize System"
-	,  configMINIMAL_STACK_SIZE
-	,  NULL
-	,  3
-	,  NULL );
+	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
+	stdio_initialise(ser_USART0);
+	// Let's create some tasks
+	create_tasks_and_semaphores();
 	
+	//Event groups
+	measureEventGroup = xEventGroupCreate();
+	readyEventGroup = xEventGroupCreate();
+	
+	//Message Buffers
+	UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
+	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
+
+	// LoRaWAN initialization
+	// Status LEDs driver
+	status_leds_initialise(5); // Priority 5 for internal task
+	
+	// Initialize the LoRaWAN driver with down-link buffer
+	lora_driver_initialise(1, DownLinkMessageBuffer);
+	// Create LoRaWAN task and start it up with priority 3
+	
+}
+
+/*-----------------------------------------------------------*/
+int main(void)
+{
+	initialiseSystem(); // Must be done as the very first thing!!
+	printf("Program Started!!\n");
+	xSemaphoreGive(UpLinkReceiveMutex);
 	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler.
 	//Execution will never reach here.
 }
+

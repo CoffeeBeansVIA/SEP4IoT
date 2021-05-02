@@ -12,17 +12,12 @@ void mutexPuts(char* str);
 SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t UpLinkSendMutex;
 
+ static void _lora_setup(void);
 // Parameters for OTAA join - You have got these in a mail from IHA
 #define LORA_appEUI "926F9B5931FCA94C"
 #define LORA_appKEY "1D2EB57B831FBDEF807978AE930786E4"
 
 static char _out_buf[100];
-
-// Functions
- static void _lora_setup(void);
- void UL_handler_receive( void *pvParameters );
-
-/*-------------------------------------------------------*/
 
 void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 	// Hardware reset of LoRaWAN transceiver
@@ -37,63 +32,55 @@ void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 	_lora_setup();
 	
 	uplinkMessageBuffer = _uplinkMessageBuffer;
-	
-	xTaskCreate(
-	UL_handler_receive
-	,  "UpLink Handler Receive"
-	,  configMINIMAL_STACK_SIZE
-	,  NULL
-	,  3
-	,  NULL );
 }
 
-void UL_handler_receive( void *pvParameters )
+ void UL_handler_receive( void *pvParameters )
  {
 
-	 for(;;){
-		 
-		 xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
-		 
-		 SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
-		 
-		 size_t xReceivedBytes;
-		 const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
+	for(;;){
+		
+		xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
+		
+		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
+		  
+		size_t xReceivedBytes;
+		const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
 
-		 // Receive next message from the UL message buffer. Wait for a maximum of 100ms for a message to become available.
-		 xReceivedBytes = xMessageBufferReceive(
-		 uplinkMessageBuffer,
-		 ( void * ) sensorDataPackage,
-		 sizeof( SensorDataPackage_t ),
-		 xBlockTime
-		 );
-		 
-		 if( xReceivedBytes > 0 ){
-			 // The sensorDataPackage contains the message to be transmitted. Serialize it here and send it using LoRaWan.
-			 mutexPuts("UL_handler_receive -> OK");
-			 mutexPuts(xReceivedBytes);
-			 
-			 // take the data out of the packet
-			 uint16_t co2_ppm = SensorDataPackage_getCO2(sensorDataPackage);
-			 
-			 // free up memory
-			 SensorDataPackage_free(sensorDataPackage);
-			 
-			 
-			 lora_driver_payload_t _uplink_payload;
-			 
-			 _uplink_payload.bytes[0] = co2_ppm >> 8;
-			 _uplink_payload.bytes[1] = co2_ppm & 0xFF;
-			 _uplink_payload.len = 2;
+		// Receive next message from the UL message buffer. Wait for a maximum of 100ms for a message to become available.
+		xReceivedBytes = xMessageBufferReceive( 
+			uplinkMessageBuffer,
+			( void * ) sensorDataPackage,
+			sizeof( SensorDataPackage_t ),
+			xBlockTime 
+		);
+		  
+		if( xReceivedBytes > 0 ){
+			// The sensorDataPackage contains the message to be transmitted. Serialize it here and send it using LoRaWan.
+			mutexPuts("UL_handler_receive -> OK");
+			mutexPuts(xReceivedBytes);
+			
+			// take the data out of the packet
+			uint16_t co2_ppm = SensorDataPackage_getCO2(sensorDataPackage);
+			
+			// free up memory
+			SensorDataPackage_free(sensorDataPackage);
+			
+			
+			lora_driver_payload_t _uplink_payload;
+			
+			_uplink_payload.bytes[0] = co2_ppm >> 8;
+			_uplink_payload.bytes[1] = co2_ppm & 0xFF;
+			_uplink_payload.len = 2;
 
-			 status_leds_shortPuls(led_ST4);  // OPTIONAL
-			 printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
-			 vTaskDelay(300000);
-			 xSemaphoreGive(UpLinkReceiveMutex);
-			 }else{
-			 // Wait 2.5 minutes to retry
-			 vTaskDelay(pdMS_TO_TICKS(150000));
-		 }
-	 }
+			status_leds_shortPuls(led_ST4);  // OPTIONAL
+			printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
+			vTaskDelay(300000);
+			xSemaphoreGive(UpLinkReceiveMutex);
+		}else{
+			// Wait 2.5 minutes to retry
+			vTaskDelay(pdMS_TO_TICKS(150000));
+		}		
+	}
 
  }
  
@@ -134,8 +121,8 @@ void UL_handler_receive( void *pvParameters )
 		 rc = lora_driver_join(LORA_OTAA);
 		 printf("Join Network TriesLeft:%d >%s<\n", maxJoinTriesLeft, lora_driver_mapReturnCodeToText(rc));
 
-		 //if ( rc != LORA_ACCEPTED)
-		 if ( rc != LORA_OK){
+		 if ( rc != LORA_ACCEPTED)
+		 {
 			 // Make the red led pulse to tell something went wrong
 			 status_leds_longPuls(led_ST1); // OPTIONAL
 			 // Wait 5 sec and lets try again
@@ -147,8 +134,7 @@ void UL_handler_receive( void *pvParameters )
 		 }
 	 } while (--maxJoinTriesLeft);
 
-	 //if (rc == LORA_ACCEPTED)
-	 if ( rc == LORA_OK)
+	 if (rc == LORA_ACCEPTED)
 	 {
 		 // Connected to LoRaWAN :-)
 		 // Make the green led steady
@@ -169,4 +155,3 @@ void UL_handler_receive( void *pvParameters )
 		 }
 	 }
  }
-
