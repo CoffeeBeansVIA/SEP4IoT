@@ -2,7 +2,11 @@
 # Automatically-generated file. Do not edit or delete the file
 ################################################################################
 
+co2Sensor.c
+
 SensorDataPackage.c
+
+upLinkHandler.c
 
 Configuration.c
 

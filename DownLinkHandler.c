@@ -11,6 +11,10 @@ uint16_t maxTempSetting;
 uint16_t maxCo2Setting;
 MessageBufferHandle_t dl_messageBuffer;
 
+void mutexPuts(char* str);
+SemaphoreHandle_t DownLinkReceiveMutex;
+SemaphoreHandle_t DownLinkUpdateMutex;
+
 static void _lora_setup(void);
 
 #define LORA_appEUI "926F9B5931FCA94C"
@@ -19,8 +23,10 @@ static void _lora_setup(void);
 static char _out_buf[100];
 
 MessageBufferHandle_t dl_messageBuffer;
+static lora_driver_payload_t downlink_payload;
+
 //lora_driver_initialise(ser_USART1, dl_messageBuffer);
-void create(MessageBufferHandle_t _downlinkMessageBuffer )
+void DL_handler_create(MessageBufferHandle_t _downlinkMessageBuffer )
 {
 	lora_driver_resetRn2483(1); // Activate reset line
 	vTaskDelay(2);
@@ -30,31 +36,13 @@ void create(MessageBufferHandle_t _downlinkMessageBuffer )
 	_lora_setup();
 	dl_messageBuffer =_downlinkMessageBuffer;
 }
-void DL_update_handler(void* pvParameters ){
-	for (;;)
-	{
-		lora_driver_payload_t downlinkPayload;
-		xMessageBufferReceive(dl_messageBuffer, &downlinkPayload, sizeof(lora_driver_payload_t), portMAX_DELAY);
-		printf("DOWN LINK: from port: %d with %d bytes received!", downlinkPayload.portNo, downlinkPayload.len); // Just for debug
-		if (2 == downlinkPayload.len) // Check that we have got the expected 2 bytes
-		{
-			//decode the payload into our variables
-			//maxHumSetting = (downlinkPayload.bytes[0] << 8) + downlinkPayload.bytes[1];
-			//maxTempSetting = (downlinkPayload.bytes[2] << 8) + downlinkPayload.bytes[3];
-			maxCo2Setting = (downlinkPayload.bytes[0] << 8) + downlinkPayload.bytes[1];
-			
-			//set new values
-			//setTemperature(maxTempSetting);
-			setCo2(maxCo2Setting);
-			//setHumidity(maxHumSetting);
-		}
-	}
-}
-void DL_receive(void *pvParameters )
+
+void DL_handler_receive(void *pvParameters )
 {
 	for(;;)
 	{
-		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
+    xSemaphoreTake( DownLinkReceiveMutex , portMAX_DELAY); // Wait for the ReceiveMutex
+	SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
 	size_t xReceivedBytes;
 	const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
 	
@@ -76,7 +64,23 @@ void DL_receive(void *pvParameters )
 		
 		// free up memory
 		SensorDataPackage_free(sensorDataPackage);
-		DL_update(pvParameters );
+
+        //update-start
+		printf("DOWN LINK: from port: %d with %d bytes received!", downlink_payload.portNo, downlink_payload.len); // Just for debug
+		if (2 == downlink_payload.len) // Check that we have got the expected 2 bytes
+		{
+			//decode the payload into our variables
+			//maxHumSetting = (downlinkPayload.bytes[0] << 8) + downlinkPayload.bytes[1];
+			//maxTempSetting = (downlinkPayload.bytes[2] << 8) + downlinkPayload.bytes[3];
+			maxCo2Setting = (downlink_payload.bytes[0] << 8) + downlink_payload.bytes[1];
+			
+			//set new values
+			//setTemperature(maxTempSetting);
+			setCo2(maxCo2Setting);
+			//setHumidity(maxHumSetting);
+		}
+        xSemaphoreGive( DownLinkReceiveMutex );
+        xSemaphoreGive( DownLinkUpdateMutex );
 		vTaskDelay(pdMS_TO_TICKS(300000));
 	}
 	else{
