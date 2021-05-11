@@ -1,10 +1,11 @@
+#include <stdio.h>
 #include <lora_driver.h>
 #include <message_buffer.h>
 #include <status_leds.h>
 #include <semphr.h>
 #include "SensorDataPackage.h"
 
-static lora_driver_payload_t uplink_payload;
+//static lora_driver_payload_t uplink_payload;
 MessageBufferHandle_t uplinkMessageBuffer;
 
 // Mutex
@@ -24,7 +25,7 @@ static char _out_buf[100];
 
 /*-------------------------------------------------------*/
 
-void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
+void UL_handler_create(MessageBufferHandle_t* _uplinkMessageBuffer ){
 	// Hardware reset of LoRaWAN transceiver
 	lora_driver_resetRn2483(1);
 	vTaskDelay(2);
@@ -48,7 +49,7 @@ void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 }
 
 void UL_handler_receive( void *pvParameters )
- {
+{
 
 	 for(;;){
 		 
@@ -57,12 +58,12 @@ void UL_handler_receive( void *pvParameters )
 		 SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
 		 
 		 size_t xReceivedBytes;
-		 const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
+		 const TickType_t xBlockTime = pdMS_TO_TICKS( 200 );
 
 		 // Receive next message from the UL message buffer. Wait for a maximum of 100ms for a message to become available.
 		 xReceivedBytes = xMessageBufferReceive(
 		 uplinkMessageBuffer,
-		 ( void * ) sensorDataPackage,
+		 &sensorDataPackage,
 		 sizeof( SensorDataPackage_t ),
 		 xBlockTime
 		 );
@@ -70,14 +71,13 @@ void UL_handler_receive( void *pvParameters )
 		 if( xReceivedBytes > 0 ){
 			 // The sensorDataPackage contains the message to be transmitted. Serialize it here and send it using LoRaWan.
 			 mutexPuts("UL_handler_receive -> OK");
-			 mutexPuts(xReceivedBytes);
+			 //mutexPuts(xReceivedBytes);
 			 
 			 // take the data out of the packet
 			 uint16_t co2_ppm = SensorDataPackage_getCO2(sensorDataPackage);
 			 
 			 // free up memory
 			 SensorDataPackage_free(sensorDataPackage);
-			 
 			 
 			 lora_driver_payload_t _uplink_payload;
 			 

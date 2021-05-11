@@ -39,14 +39,16 @@ MessageBufferHandle_t DownLinkMessageBuffer = NULL;
 void trigger_CO2_measurement_task( void *pvParameters );
 void UL_handler_send( void *pvParameters );
 uint16_t getCO2();
+void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer );
+void CO2_handler_create();
 
 /*-----------------------PROCEDURES----------------------*/
 void create_semaphores(void){
 	// Semaphores initialization
-	if(NULL == sysInitMutex){
+	/*if(NULL == sysInitMutex){
 		sysInitMutex = xSemaphoreCreateMutex();
 		xSemaphoreGive(sysInitMutex);
-	}
+	}*/
 	
 	if(NULL == measureCo2Mutex){
 		measureCo2Mutex = xSemaphoreCreateMutex();
@@ -80,7 +82,7 @@ void create_message_buffers(void){
 	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
 }
 
-void create_tasks(void){	
+void create_tasks(void){
 	xTaskCreate(
 	trigger_CO2_measurement_task
 	,  "Trigger CO2 Measurement Task"
@@ -109,9 +111,8 @@ void mutexPuts(char* str){
 }
 
 void initialiseSystem( void *pvParameters ){
+	taskENTER_CRITICAL();
 	create_semaphores();
-
-	xSemaphoreTake(sysInitMutex, portMAX_DELAY);
 	
 	// Set output ports for LEDs used in the example
 	DDRA |= _BV(DDA0) | _BV(DDA7);
@@ -131,14 +132,15 @@ void initialiseSystem( void *pvParameters ){
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-	UL_handler_create(UpLinkMessageBuffer);
-	
+	create_tasks();
+	UL_handler_create(&UpLinkMessageBuffer);
 	CO2_handler_create();
 	
-	xSemaphoreGive(sysInitMutex);
 	mutexPuts("Program Started!!\n");
+	
+	taskEXIT_CRITICAL();
 	xSemaphoreGive(UpLinkReceiveMutex);
-	create_tasks();
+	vTaskSuspend(NULL);
 }
 
 void trigger_CO2_measurement_task( void *pvParameters ){
