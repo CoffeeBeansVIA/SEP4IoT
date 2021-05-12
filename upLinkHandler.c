@@ -21,11 +21,24 @@ static char _out_buf[100];
 
 // Functions
  static void _lora_setup(void);
- void UL_handler_receive( void *pvParameters );
+ void UL_handler_task( void *pvParameters );
 
 /*-------------------------------------------------------*/
 
 void UL_handler_create(MessageBufferHandle_t* _uplinkMessageBuffer ){
+	uplinkMessageBuffer = _uplinkMessageBuffer;
+
+	xTaskCreate(
+	UL_handler_task
+	,  "UpLink Handler Receive"
+	,  configMINIMAL_STACK_SIZE
+	,  NULL
+	,  3
+	,  NULL );
+}
+
+void UL_handler_task( void *pvParameters )
+{
 	// Hardware reset of LoRaWAN transceiver
 	lora_driver_resetRn2483(1);
 	vTaskDelay(2);
@@ -36,20 +49,6 @@ void UL_handler_create(MessageBufferHandle_t* _uplinkMessageBuffer ){
 	lora_driver_flushBuffers(); // get rid of first version string from module after reset!
 
 	_lora_setup();
-	
-	uplinkMessageBuffer = _uplinkMessageBuffer;
-	
-	xTaskCreate(
-	UL_handler_receive
-	,  "UpLink Handler Receive"
-	,  configMINIMAL_STACK_SIZE
-	,  NULL
-	,  3
-	,  NULL );
-}
-
-void UL_handler_receive( void *pvParameters )
-{
 
 	 for(;;){
 		 
@@ -102,7 +101,7 @@ void UL_handler_receive( void *pvParameters )
 	 lora_driver_returnCode_t rc;
 	 status_leds_slowBlink(led_ST2); // OPTIONAL: Led the green led blink slowly while we are setting up LoRa
 
-	 // Factory reset the transceiver
+	// Factory reset the transceiver
 	 printf("FactoryReset >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_rn2483FactoryReset()));
 	 
 	 // Configure to EU868 LoRaWAN standards
@@ -134,7 +133,7 @@ void UL_handler_receive( void *pvParameters )
 		 rc = lora_driver_join(LORA_OTAA);
 		 printf("Join Network TriesLeft:%d >%s<\n", maxJoinTriesLeft, lora_driver_mapReturnCodeToText(rc));
 
-		 //if ( rc != LORA_ACCEPTED)
+		 //if ( rc != LORA_ACCEPTED) // !!!!!!!
 		 if ( rc != LORA_OK){
 			 // Make the red led pulse to tell something went wrong
 			 status_leds_longPuls(led_ST1); // OPTIONAL

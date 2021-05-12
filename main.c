@@ -110,15 +110,15 @@ void mutexPuts(char* str){
 	}
 }
 
-void initialiseSystem( void *pvParameters ){
-	taskENTER_CRITICAL();
+void initialiseSystem( void ){
+
 	create_semaphores();
+	
+	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
+	stdio_initialise(ser_USART0);
 	
 	// Set output ports for LEDs used in the example
 	DDRA |= _BV(DDA0) | _BV(DDA7);
-
-	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
-	stdio_initialise(ser_USART0);
 	
 	create_event_groups();
 	
@@ -138,9 +138,7 @@ void initialiseSystem( void *pvParameters ){
 	
 	mutexPuts("Program Started!!\n");
 	
-	taskEXIT_CRITICAL();
 	xSemaphoreGive(UpLinkReceiveMutex);
-	vTaskSuspend(NULL);
 }
 
 void trigger_CO2_measurement_task( void *pvParameters ){
@@ -200,13 +198,8 @@ void UL_handler_send( void *pvParameters )
 /*---------------------------MAIN----------------------------*/
 
 int main(void){
-	xTaskCreate(
-	initialiseSystem // Must be done as the very first thing!!
-	,  "Initialize System"
-	,  configMINIMAL_STACK_SIZE
-	,  NULL
-	,  3
-	,  NULL );
+	
+	initialiseSystem();
 	
 	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler.
 	//Execution will never reach here.

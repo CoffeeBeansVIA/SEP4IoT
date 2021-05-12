@@ -12,7 +12,7 @@
 #define LORA_appKEY "1D2EB57B831FBDEF807978AE930786E4"
 
 void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer );
-void UL_handler_receive( void *pvParameters );
+void UL_handler_task( void *pvParameters );
 static void _lora_setup();
 
 #endif 

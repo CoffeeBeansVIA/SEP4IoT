@@ -34,7 +34,7 @@ void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer ){
 	uplinkMessageBuffer = _uplinkMessageBuffer;
 }
 
- void UL_handler_receive( void *pvParameters )
+ void UL_handler_task( void *pvParameters )
  {
 
 	for(;;){
