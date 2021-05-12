@@ -45,10 +45,10 @@ void CO2_handler_create();
 /*-----------------------PROCEDURES----------------------*/
 void create_semaphores(void){
 	// Semaphores initialization
-	/*if(NULL == sysInitMutex){
+	if(NULL == sysInitMutex){
 		sysInitMutex = xSemaphoreCreateMutex();
-		xSemaphoreGive(sysInitMutex);
-	}*/
+		xSemaphoreTake(sysInitMutex, portMAX_DELAY);
+	}
 	
 	if(NULL == measureCo2Mutex){
 		measureCo2Mutex = xSemaphoreCreateMutex();
@@ -98,7 +98,7 @@ void create_tasks(void){
 	,  NULL  // Params
 	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
 	,  NULL );
-	
+	xSemaphoreGive(sysInitMutex);
 }
 
 /*-------------------------------------------------------*/
@@ -132,10 +132,12 @@ void initialiseSystem( void ){
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-	create_tasks();
+	
 	UL_handler_create(&UpLinkMessageBuffer);
 	CO2_handler_create();
+	create_tasks();
 	
+	xSemaphoreTake(sysInitMutex , portMAX_DELAY);
 	mutexPuts("Program Started!!\n");
 	
 	xSemaphoreGive(UpLinkReceiveMutex);

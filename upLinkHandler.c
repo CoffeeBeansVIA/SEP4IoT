@@ -134,7 +134,7 @@ void UL_handler_task( void *pvParameters )
 		 printf("Join Network TriesLeft:%d >%s<\n", maxJoinTriesLeft, lora_driver_mapReturnCodeToText(rc));
 
 		 //if ( rc != LORA_ACCEPTED) // !!!!!!!
-		 if ( rc != LORA_OK){
+		 if ( rc != LORA_ACCEPTED){
 			 // Make the red led pulse to tell something went wrong
 			 status_leds_longPuls(led_ST1); // OPTIONAL
 			 // Wait 5 sec and lets try again
