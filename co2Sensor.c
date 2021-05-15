@@ -12,6 +12,7 @@ mh_z19_returnCode_t rc;
 EventGroupHandle_t measureEventGroup;
 EventGroupHandle_t readyEventGroup;
 
+void mutexPuts(char* str);
 void co2sensorTask(void* pvParameters);
 #define BIT_TASK_CO2_MEASURE (1 << 0)
 #define BIT_TASK_CO2_READY (1 << 1)
@@ -43,18 +44,14 @@ void co2sensorTask(void* pvParameters)
 		portMAX_DELAY);
 		
 		rc = mh_z19_takeMeassuring();
-		mh_z19_getCo2Ppm(&lastCO2ppm);
-		
-		if(lastCO2ppm > 0){
-			
-		}
 		
 		if (rc != MHZ19_OK)
 		{
 			puts("something went wrong in co2Sensor");
 			// Something went wrong
 		}
-		xEventGroupSetBits(readyEventGroup,BIT_TASK_CO2_READY);
+		
+		
 	}
 }
 

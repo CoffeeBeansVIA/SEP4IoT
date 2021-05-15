@@ -22,7 +22,7 @@ void UL_handler_create( MessageBufferHandle_t _uplinkMessageBuffer );
 void trigger_CO2_measurement_task( void *pvParameters );
 void CO2_handler_create();
 void UL_handler_send( void *pvParameters );
-void UL_handler_task( void *pvParameters );
+void UL_receive_task( void *pvParameters );
 
 // define semaphores
 SemaphoreHandle_t xTestSemaphore;
@@ -93,7 +93,7 @@ void create_tasks_and_semaphores(void)
 	,  NULL );
 	
 	xTaskCreate(
-	UL_handler_task
+	UL_receive_task
 	,  "UpLink Handler Receive" 
 	,  configMINIMAL_STACK_SIZE
 	,  NULL
