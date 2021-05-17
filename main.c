@@ -184,11 +184,11 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 
 
 void DL_handler_update(void* pvParameters ){
-printf("update");
-xSemaphoreTake( DownLinkUpdateMutex , portMAX_DELAY);
-SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
-lora_driver_payload_t downlinkPayload;
-size_t xReceivedBytes;
+     printf("update");
+     xSemaphoreTake( DownLinkUpdateMutex , portMAX_DELAY);
+     SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
+     lora_driver_payload_t downlinkPayload;
+     size_t xReceivedBytes;
 const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
 	for (;;)
     
@@ -223,18 +223,13 @@ const TickType_t xBlockTime = pdMS_TO_TICKS( 20 );
 }
 void UL_handler_send( void *pvParameters )
 {
-printf("send");
-	// Will only be executed one time
-	// UpLinkHandler
-	UL_handler_create(UpLinkMessageBuffer);
-	
 	for(;;){
-		xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
+		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
 		// Payload
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
 		
-		SensorDataPackage_setCO2(sensorDataPackage,250);/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
+		SensorDataPackage_setCO2(sensorDataPackage,getCO2());/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
 		
 		const TickType_t x100ms = pdMS_TO_TICKS( 100 );
 		
@@ -251,12 +246,11 @@ printf("send");
 			// OK
 			mutexPuts("UL_handler_send -> OK");
 			SensorDataPackage_free(sensorDataPackage);
-			xSemaphoreGive( UpLinkSendMutex );
-			xSemaphoreGive( UpLinkReceiveMutex );
-			vTaskDelay(pdMS_TO_TICKS(300000));
+			xSemaphoreGive(UpLinkSendMutex);
 		}
 	}
 }
+
 /*-----------------------------------------------------------*/
 
 /*---------------------------MAIN----------------------------*/
