@@ -8,7 +8,7 @@ typedef struct SensorDataPackage {
 
 SensorDataPackage_t SensorDataPackage_create(){
 	SensorDataPackage_t packet = pvPortMalloc(sizeof(SensorDataPackage_st));
-	packet->co2Data = -1;
+	
 	if (NULL == packet){
 		return NULL;
 	}
