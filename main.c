@@ -98,7 +98,7 @@ void create_tasks(void){
 	,  NULL  // Params
 	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
 	,  NULL );
-	xSemaphoreGive(sysInitMutex);
+
 }
 
 /*-------------------------------------------------------*/
@@ -137,10 +137,7 @@ void initialiseSystem( void ){
 	CO2_handler_create();
 	create_tasks();
 	
-	xSemaphoreTake(sysInitMutex , portMAX_DELAY);
-	mutexPuts("Program Started!!\n");
-	
-	xSemaphoreGive(UpLinkReceiveMutex);
+	xSemaphoreGive(sysInitMutex);
 }
 
 void trigger_CO2_measurement_task( void *pvParameters ){
@@ -202,7 +199,9 @@ void UL_handler_send( void *pvParameters )
 int main(void){
 	
 	initialiseSystem();
-	
+	xSemaphoreTake(sysInitMutex , portMAX_DELAY);
+	mutexPuts("Program Started!!\n");
+	xSemaphoreGive(UpLinkReceiveMutex);
 	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler.
 	//Execution will never reach here.
 }
