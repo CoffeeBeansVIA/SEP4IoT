@@ -24,6 +24,7 @@ SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 
 // Event groups
+char buff[63];
 EventGroupHandle_t measureEventGroup = NULL;
 #define BIT_TASK_CO2_MEASURE (1<<0)
 EventGroupHandle_t readyEventGroup = NULL;
@@ -32,14 +33,14 @@ EventGroupHandle_t readyEventGroup = NULL;
 // MessageBuffers
 const int UpLinkSize = sizeof(SensorDataPackage_t)*2;
 const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
-MessageBufferHandle_t UpLinkMessageBuffer = NULL;
-MessageBufferHandle_t DownLinkMessageBuffer = NULL;
+static MessageBufferHandle_t UpLinkMessageBuffer = NULL;
+static MessageBufferHandle_t DownLinkMessageBuffer = NULL;
 
 // Tasks & functions
 void trigger_CO2_measurement_task( void *pvParameters );
 void UL_handler_send( void *pvParameters );
 uint16_t getCO2();
-void UL_handler_create(MessageBufferHandle_t _uplinkMessageBuffer );
+void UL_handler_create();
 void CO2_handler_create();
 
 /*-----------------------PROCEDURES----------------------*/
@@ -133,10 +134,10 @@ void initialiseSystem( void ){
 	// Create LoRaWAN task and start it up with priority 3
 	
 	
-	UL_handler_create(&UpLinkMessageBuffer);
+	UL_handler_create();
 	CO2_handler_create();
 	create_tasks();
-	
+
 	xSemaphoreGive(sysInitMutex);
 }
 
@@ -176,20 +177,37 @@ void UL_handler_send( void *pvParameters )
 		
 		const TickType_t x100ms = pdMS_TO_TICKS( 100 );
 		
-		// Send the payload to the message buffer, a maximum of 100ms to wait for enough space to be available in the message buffer.
-		xBytesSent = xMessageBufferSend( UpLinkMessageBuffer, ( void * ) sensorDataPackage, sizeof( sensorDataPackage ), x100ms );
+		int size = sizeof( sensorDataPackage );
 		
-		if( xBytesSent != sizeof( sensorDataPackage ) )
+		// Send the payload to the message buffer, a maximum of 100ms to wait for enough space to be available in the message buffer.
+		xBytesSent = xMessageBufferSend( UpLinkMessageBuffer, ( void * ) sensorDataPackage, size, x100ms );
+		
+		if( xBytesSent != size )
 		{
 			// The call to xMessageBufferSend() timed out before there was enough space in the buffer for the data to be written.
 			// Wait 2.5 minutes to retry
 			SensorDataPackage_free(sensorDataPackage);
 			vTaskDelay(pdMS_TO_TICKS(150000));
 		}else{
-			// OK
-			mutexPuts("UL_handler_send -> OK");
-			SensorDataPackage_free(sensorDataPackage);
-			xSemaphoreGive(UpLinkSendMutex);
+			// Try to receive
+			const TickType_t xBlockTime = pdMS_TO_TICKS( 200 );
+			
+			SensorDataPackage_t receivedDataPackage = SensorDataPackage_create();
+			
+			int xReceivedBytes = xMessageBufferReceive( // Does not work properly... Fuck it, will do it the other way for now.
+				UpLinkMessageBuffer,
+				&receivedDataPackage,
+				size,
+				xBlockTime
+			);
+			
+			if(xReceivedBytes > 0){
+				char buff [63] ;
+				sprintf(buff, "UL_handler_send Co2 = (%d) -> OK", SensorDataPackage_getCO2(receivedDataPackage));
+				mutexPuts(buff);
+				SensorDataPackage_free(receivedDataPackage);
+				xSemaphoreGive(UpLinkSendMutex);
+			}
 		}
 	}
 }
@@ -199,9 +217,12 @@ void UL_handler_send( void *pvParameters )
 int main(void){
 	
 	initialiseSystem();
+	
 	xSemaphoreTake(sysInitMutex , portMAX_DELAY);
 	mutexPuts("Program Started!!\n");
+	
 	xSemaphoreGive(UpLinkReceiveMutex);
+	
 	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler.
 	//Execution will never reach here.
 }
