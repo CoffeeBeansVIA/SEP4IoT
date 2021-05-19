@@ -1,32 +1,56 @@
 #include "ATMEGA_FreeRTOS.h"
 #include "semphr.h"
 #include "Configuration.h"
+#include <stdint.h>
 
 
-void create_configuration(){
-	temperatureMutex = xSemaphoreCreateMutex();
-	co2Mutex = xSemaphoreCreateMutex();
-	humidityMutex = xSemaphoreCreateMutex();
+typedef struct Configuration {
+	uint16_t co2Data;
+	uint16_t co2MaxFluct;
+	uint16_t temperatureData;
+	uint16_t humidityData;
+} Configuration_st;
+
+Configuration_t Configuration_create(){
+	Configuration_t config = pvPortMalloc(sizeof(Configuration_t));
+	config->co2Data = 700;
+	if (NULL == config){
+		return NULL;
+	}
+	return config;
 }
 
-SemaphoreHandle_t setTemperature(SemaphoreHandle_t source)
-{
-	temperatureMutex = source;
+
+void Configuration_free(Configuration_t config){
+	vPortFree( (void *) config );
+	config = NULL;
 }
-SemaphoreHandle_t getTemperature(){
-	return temperatureMutex;
+
+void Configuration_setCO2(Configuration_t config, uint16_t _co2Data){
+	
+	config->co2Data = _co2Data;
+	printf("Co2 set to %d \n",_co2Data);
 }
-SemaphoreHandle_t setCo2(SemaphoreHandle_t source)
-{
-	co2Mutex = source;
+
+void Configuration_setCO2MaxFluct(Configuration_t config, uint16_t _co2MaxFluct){
+	
+	config->co2MaxFluct = _co2MaxFluct;
+	printf("Co2 Maximum Fluctuation set to %d \n",_co2MaxFluct);
 }
-SemaphoreHandle_t getCo2(){
-	return co2Mutex;
+
+void Configuration_setTemperature(Configuration_t config, uint16_t _temperatureData){
+	config->temperatureData = _temperatureData;
 }
-SemaphoreHandle_t setHumidity(SemaphoreHandle_t source)
-{
-	humidityMutex = source;
+void Configuration_setHumidity(Configuration_t config, uint16_t _humidityData){
+	config->humidityData = _humidityData;
 }
-SemaphoreHandle_t getHumidity(){
-	return humidityMutex;
+
+uint16_t Configuration_getCO2(Configuration_t config){
+	return config->co2Data;
+}
+uint16_t Configuration_getTemperature(Configuration_t config){
+	return config->temperatureData;
+}
+uint16_t Configuration_getHumidity(Configuration_t config){
+	return config->humidityData;
 }

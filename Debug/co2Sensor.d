@@ -24,7 +24,7 @@ co2Sensor.d co2Sensor.o: .././co2Sensor.c \
  ../drivers/serial.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\time.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdlib.h \
- ../FreeRTOS/src/event_groups.h ../FreeRTOS/src/timers.h
+ ../FreeRTOS/src/event_groups.h ../FreeRTOS/src/timers.h .././co2Sensor.h
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdio.h:
 
@@ -91,3 +91,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\
 ../FreeRTOS/src/event_groups.h:
 
 ../FreeRTOS/src/timers.h:
+
+.././co2Sensor.h:

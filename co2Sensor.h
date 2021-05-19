@@ -1,11 +1,16 @@
 
-#include "global_declarations.h"
 #include <ATMEGA_FreeRTOS.h>
 #include <mh_z19.h>
 #include <time.h>
+#include <event_groups.h>
 
 #ifndef CO2SENSOR_H_
 #define CO2SENSOR_H_
+
+EventGroupHandle_t measureEventGroup;
+#define BIT_TASK_CO2_MEASURE (1<<0)
+EventGroupHandle_t readyEventGroup;
+#define BIT_TASK_CO2_READY (1<<1)
 
 // Fields
 uint16_t lastCO2ppm;

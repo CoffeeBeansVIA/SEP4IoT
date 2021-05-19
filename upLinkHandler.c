@@ -11,7 +11,7 @@ MessageBufferHandle_t UpLinkMessageBuffer;
 // Mutex
 void mutexPuts(char* str);
 SemaphoreHandle_t UpLinkReceiveMutex;
-SemaphoreHandle_t UpLinkSendMutex;
+SemaphoreHandle_t windowControllerMutex;
 
 const int UpLinkSize;
 
@@ -56,7 +56,7 @@ void UL_receive_task( void *pvParameters )
 	taskEXIT_CRITICAL();
 	 for(;;){
 		 
-		 xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
+		 xSemaphoreTake( windowControllerMutex , portMAX_DELAY);
 		 
 		 SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
 		 

@@ -14,6 +14,7 @@
 
 // MISC includes
 #include "SensorDataPackage.h"
+#include "window_controller.h"
 
 /*------------------------DEFINES------------------------*/
 // Mutexes
@@ -21,7 +22,10 @@ SemaphoreHandle_t sysInitMutex;
 SemaphoreHandle_t measureCo2Mutex;
 SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
+SemaphoreHandle_t DownLinkUpdateMutex;
+SemaphoreHandle_t DownLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
+SemaphoreHandle_t windowControllerMutex;
 
 // Event groups
 char buff[63];
@@ -32,13 +36,14 @@ EventGroupHandle_t readyEventGroup = NULL;
 
 // MessageBuffers
 const int UpLinkSize = sizeof(SensorDataPackage_t)*2;
-const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
+const int DownLinkSize = sizeof(SensorDataPackage_t)*2;
 static MessageBufferHandle_t UpLinkMessageBuffer = NULL;
 static MessageBufferHandle_t DownLinkMessageBuffer = NULL;
 
 // Tasks & functions
 void trigger_CO2_measurement_task( void *pvParameters );
 void UL_handler_send( void *pvParameters );
+void DL_handler_receive( void *pvParameters );
 uint16_t getCO2();
 void UL_handler_create();
 void CO2_handler_create();
@@ -61,14 +66,28 @@ void create_semaphores(void){
 		xSemaphoreTake(UpLinkSendMutex, portMAX_DELAY);
 	}
 	
-	if(NULL == UpLinkReceiveMutex){
+	if( NULL == UpLinkReceiveMutex){
 		UpLinkReceiveMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
+	}
+	if ( NULL == DownLinkUpdateMutex ){
+		DownLinkUpdateMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake(DownLinkUpdateMutex, portMAX_DELAY);
+	}
+	
+	if( NULL == DownLinkReceiveMutex ){
+		DownLinkReceiveMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake(DownLinkReceiveMutex, portMAX_DELAY);
 	}
 	
 	if(NULL == putsMutex){
 		putsMutex = xSemaphoreCreateMutex();
 		xSemaphoreGive( putsMutex );
+	}
+	
+	if(NULL == windowControllerMutex){
+		windowControllerMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake( windowControllerMutex , portMAX_DELAY);
 	}
 	
 }
@@ -99,7 +118,14 @@ void create_tasks(void){
 	,  NULL  // Params
 	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
 	,  NULL );
-	xSemaphoreGive(sysInitMutex);
+	
+//	xTaskCreate(
+//	DL_handler_receive
+//	,  "DownLink Handler Receive"  // A name just for humans
+//	,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack High water
+//	,  NULL  // Params
+//	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+//	,  NULL );
 }
 
 /*-------------------------------------------------------*/
@@ -133,8 +159,9 @@ void initialiseSystem( void ){
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-	
+	rcServoTask_create();
 	UL_handler_create();
+	DL_handler_create();
 	CO2_handler_create();
 	create_tasks();
 
@@ -146,6 +173,7 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 	for(;;)
 	{
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
+		//xSemaphoreTake(DownLinkReceiveMutex, portMAX_DELAY);
 		xEventGroupClearBits(readyEventGroup,BIT_TASK_CO2_READY);
 		xEventGroupSetBits(measureEventGroup,BIT_TASK_CO2_MEASURE);
 		
@@ -165,6 +193,45 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 	}
 }
 
+void DL_handler_receive(void *pvParameters )
+{
+	for(;;)
+	{
+		xSemaphoreTake( DownLinkReceiveMutex , portMAX_DELAY); // Wait for the ReceiveMutex
+		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
+		size_t xReceivedBytes;
+		const TickType_t x100ms = pdMS_TO_TICKS( 100 );
+		int size = sizeof( sensorDataPackage );
+		
+	    xReceivedBytes = xMessageBufferReceive( DownLinkMessageBuffer, ( void * ) sensorDataPackage, size, x100ms );
+		if(xReceivedBytes != size)
+		{
+			SensorDataPackage_free(sensorDataPackage);
+			vTaskDelay(pdMS_TO_TICKS(150000));
+		}
+		else{
+			const TickType_t xBlockTime = pdMS_TO_TICKS( 200 );
+			
+			SensorDataPackage_t receivedDataPackage = SensorDataPackage_create();
+			//try to update
+			int xUpdatedBytes = xMessageBufferSend( 
+			DownLinkMessageBuffer,
+			&receivedDataPackage,
+			size,
+			xBlockTime
+			);
+			
+			if(xUpdatedBytes > 0){
+				char buff [63] ;
+				sprintf(buff, "DL_handler_update Co2 = (%d) -> OK", SensorDataPackage_getCO2(sensorDataPackage));
+				mutexPuts(buff);
+				SensorDataPackage_free(sensorDataPackage);
+				xSemaphoreGive(DownLinkUpdateMutex);
+			}
+		}
+	}
+}
+	
 void UL_handler_send( void *pvParameters )
 {
 	for(;;){
@@ -188,17 +255,17 @@ void UL_handler_send( void *pvParameters )
 			// Wait 2.5 minutes to retry
 			SensorDataPackage_free(sensorDataPackage);
 			vTaskDelay(pdMS_TO_TICKS(150000));
-		}else{
+			}else{
 			// Try to receive
 			const TickType_t xBlockTime = pdMS_TO_TICKS( 200 );
 			
 			SensorDataPackage_t receivedDataPackage = SensorDataPackage_create();
 			
 			int xReceivedBytes = xMessageBufferReceive( // Does not work properly... Fuck it, will do it the other way for now.
-				UpLinkMessageBuffer,
-				&receivedDataPackage,
-				size,
-				xBlockTime
+			UpLinkMessageBuffer,
+			&receivedDataPackage,
+			size,
+			xBlockTime
 			);
 			
 			if(xReceivedBytes > 0){
@@ -211,37 +278,6 @@ void UL_handler_send( void *pvParameters )
 		}
 	}
 }
-void UL_handler_send( void *pvParameters )
-{
-	for(;;){
-		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
-		size_t xBytesSent;
-		// Payload
-		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
-		
-		SensorDataPackage_setCO2(sensorDataPackage,getCO2());/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
-		
-		const TickType_t x100ms = pdMS_TO_TICKS( 100 );
-		
-		// Send the payload to the message buffer, a maximum of 100ms to wait for enough space to be available in the message buffer.
-		xBytesSent = xMessageBufferSend( UpLinkMessageBuffer, ( void * ) sensorDataPackage, sizeof( sensorDataPackage ), x100ms );
-		
-		if( xBytesSent != sizeof( sensorDataPackage ) )
-		{
-			// The call to xMessageBufferSend() timed out before there was enough space in the buffer for the data to be written.
-			// Wait 2.5 minutes to retry
-			SensorDataPackage_free(sensorDataPackage);
-			vTaskDelay(pdMS_TO_TICKS(150000));
-			}else{
-			// OK
-			mutexPuts("UL_handler_send -> OK");
-			SensorDataPackage_free(sensorDataPackage);
-			xSemaphoreGive(UpLinkSendMutex);
-		}
-	}
-}
-
-/*-----------------------------------------------------------*/
 
 /*---------------------------MAIN----------------------------*/
 

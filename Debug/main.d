@@ -25,7 +25,8 @@ main.d main.o: .././main.c \
  ../drivers/serial.h ../drivers/hih8120.h ../FreeRTOS/src/event_groups.h \
  ../FreeRTOS/src/timers.h ../drivers/lora_driver.h \
  ../FreeRTOS/src/message_buffer.h ../FreeRTOS/src/stream_buffer.h \
- ../drivers/status_leds.h .././SensorDataPackage.h .././Configuration.h
+ ../drivers/status_leds.h .././SensorDataPackage.h \
+ .././window_controller.h
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdio.h:
 
@@ -105,4 +106,4 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\
 
 .././SensorDataPackage.h:
 
-.././Configuration.h:
+.././window_controller.h:

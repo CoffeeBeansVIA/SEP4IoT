@@ -33,17 +33,21 @@ LINKER_SCRIPT_DEP:=
 
 # Every subdirectory with source files must be described here
 SUBDIRS :=  \
+../drivers/ \
 ../FreeRTOS/ \
 ../FreeRTOS/Example/ \
 ../FreeRTOS/FreeRTOSTraceDriver/ \
-../FreeRTOS/src/
+../FreeRTOS/src/ \
+../vsix/
 
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
-../co2Sensor.c \
-../SensorDataPackage.c \
 ../upLinkHandler.c \
+../window_controller.c \
+../co2Sensor.c \
+../main.c \
+../SensorDataPackage.c \
 ../Configuration.c \
 ../DownLinkHandler.c \
 ../FreeRTOS/FreeRTOSTraceDriver/FreeRTOSTraceDriver.c \
@@ -56,9 +60,7 @@ C_SRCS +=  \
 ../FreeRTOS/src/stream_buffer.c \
 ../FreeRTOS/src/tasks.c \
 ../FreeRTOS/src/timers.c \
-../FreeRTOS/src/variantHooks.c \
-../LoRaWANHandler.c \
-../main.c
+../FreeRTOS/src/variantHooks.c
 
 
 PREPROCESSING_SRCS += 
@@ -68,9 +70,11 @@ ASM_SRCS +=
 
 
 OBJS +=  \
-co2Sensor.o \
-SensorDataPackage.o \
 upLinkHandler.o \
+window_controller.o \
+co2Sensor.o \
+main.o \
+SensorDataPackage.o \
 Configuration.o \
 DownLinkHandler.o \
 FreeRTOS/FreeRTOSTraceDriver/FreeRTOSTraceDriver.o \
@@ -83,14 +87,14 @@ FreeRTOS/src/queue.o \
 FreeRTOS/src/stream_buffer.o \
 FreeRTOS/src/tasks.o \
 FreeRTOS/src/timers.o \
-FreeRTOS/src/variantHooks.o \
-LoRaWANHandler.o \
-main.o
+FreeRTOS/src/variantHooks.o
 
 OBJS_AS_ARGS +=  \
-co2Sensor.o \
-SensorDataPackage.o \
 upLinkHandler.o \
+window_controller.o \
+co2Sensor.o \
+main.o \
+SensorDataPackage.o \
 Configuration.o \
 DownLinkHandler.o \
 FreeRTOS/FreeRTOSTraceDriver/FreeRTOSTraceDriver.o \
@@ -103,14 +107,14 @@ FreeRTOS/src/queue.o \
 FreeRTOS/src/stream_buffer.o \
 FreeRTOS/src/tasks.o \
 FreeRTOS/src/timers.o \
-FreeRTOS/src/variantHooks.o \
-LoRaWANHandler.o \
-main.o
+FreeRTOS/src/variantHooks.o
 
 C_DEPS +=  \
-co2Sensor.d \
-SensorDataPackage.d \
 upLinkHandler.d \
+window_controller.d \
+co2Sensor.d \
+main.d \
+SensorDataPackage.d \
 Configuration.d \
 DownLinkHandler.d \
 FreeRTOS/FreeRTOSTraceDriver/FreeRTOSTraceDriver.d \
@@ -123,14 +127,14 @@ FreeRTOS/src/queue.d \
 FreeRTOS/src/stream_buffer.d \
 FreeRTOS/src/tasks.d \
 FreeRTOS/src/timers.d \
-FreeRTOS/src/variantHooks.d \
-LoRaWANHandler.d \
-main.d
+FreeRTOS/src/variantHooks.d
 
 C_DEPS_AS_ARGS +=  \
-co2Sensor.d \
-SensorDataPackage.d \
 upLinkHandler.d \
+window_controller.d \
+co2Sensor.d \
+main.d \
+SensorDataPackage.d \
 Configuration.d \
 DownLinkHandler.d \
 FreeRTOS/FreeRTOSTraceDriver/FreeRTOSTraceDriver.d \
@@ -143,9 +147,7 @@ FreeRTOS/src/queue.d \
 FreeRTOS/src/stream_buffer.d \
 FreeRTOS/src/tasks.d \
 FreeRTOS/src/timers.d \
-FreeRTOS/src/variantHooks.d \
-LoRaWANHandler.d \
-main.d
+FreeRTOS/src/variantHooks.d
 
 OUTPUT_FILE_PATH +=SEP4IOT.elf
 
@@ -161,6 +163,20 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+./upLinkHandler.o: .././upLinkHandler.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=16000000L  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../drivers" -I"../FreeRTOS/src"  -O0 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega2560" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+./window_controller.o: .././window_controller.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=16000000L  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../drivers" -I"../FreeRTOS/src"  -O0 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega2560" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
 ./co2Sensor.o: .././co2Sensor.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
@@ -168,14 +184,14 @@ LINKER_SCRIPT_DEP+=
 	@echo Finished building: $<
 	
 
-./SensorDataPackage.o: .././SensorDataPackage.c
+./main.o: .././main.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=16000000L  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../drivers" -I"../FreeRTOS/src"  -O0 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega2560" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
 	@echo Finished building: $<
 	
 
-./upLinkHandler.o: .././upLinkHandler.c
+./SensorDataPackage.o: .././SensorDataPackage.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=16000000L  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../drivers" -I"../FreeRTOS/src"  -O0 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega2560" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
@@ -267,20 +283,6 @@ FreeRTOS/src/timers.o: ../FreeRTOS/src/timers.c
 	
 
 FreeRTOS/src/variantHooks.o: ../FreeRTOS/src/variantHooks.c
-	@echo Building file: $<
-	@echo Invoking: AVR/GNU C Compiler : 5.4.0
-	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=16000000L  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../drivers" -I"../FreeRTOS/src"  -O0 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega2560" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
-	@echo Finished building: $<
-	
-
-./LoRaWANHandler.o: .././LoRaWANHandler.c
-	@echo Building file: $<
-	@echo Invoking: AVR/GNU C Compiler : 5.4.0
-	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=16000000L  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../drivers" -I"../FreeRTOS/src"  -O0 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega2560" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
-	@echo Finished building: $<
-	
-
-./main.o: .././main.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=16000000L  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../drivers" -I"../FreeRTOS/src"  -O0 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega2560" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

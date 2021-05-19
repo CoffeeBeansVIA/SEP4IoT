@@ -13,14 +13,16 @@
 SemaphoreHandle_t measureCo2Mutex;
 SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
+SemaphoreHandle_t DownLinkUpdateMutex;
+SemaphoreHandle_t DownLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 SemaphoreHandle_t sysInitMutex;
 
 // Event groups
 EventGroupHandle_t measureEventGroup = NULL;
-#define BIT_TASK_CO2_MEASURE (1<<0);
+#define BIT_TASK_CO2_MEASURE (1<<0)
 EventGroupHandle_t readyEventGroup = NULL;
-#define BIT_TASK_CO2_READY (1<<1);
+#define BIT_TASK_CO2_READY (1<<1)
 
 void mutexPuts(char* str){
 	if(xSemaphoreTake(putsMutex, portMAX_DELAY) == pdTRUE){

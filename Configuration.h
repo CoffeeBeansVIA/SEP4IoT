@@ -1,13 +1,15 @@
-#include "ATMEGA_FreeRTOS.h"
-#include "semphr.h"
+#pragma once
+#include <stdint.h>
 
-SemaphoreHandle_t temperatureMutex;
-SemaphoreHandle_t co2Mutex;
-SemaphoreHandle_t humidityMutex;
-void create_configuration();
-SemaphoreHandle_t setTemperature(SemaphoreHandle_t source);
-SemaphoreHandle_t getTemperature();
-SemaphoreHandle_t setCo2(SemaphoreHandle_t source);
-SemaphoreHandle_t getCo2();
-SemaphoreHandle_t setHumidity(SemaphoreHandle_t source);
-SemaphoreHandle_t getHumidity();
+
+//define type 'Configuration'
+typedef struct Configuration* Configuration_t;
+
+Configuration_t Configuration_create();
+void Configuration_destroy(Configuration_t config);
+
+void Configuration_setCO2(Configuration_t config, uint16_t _co2Data);
+void Configuration_setTemperature(Configuration_t config, uint16_t _temperatureData);
+void Configuration_setHumidity(Configuration_t config, uint16_t _humidityData);
+uint16_t Configuration_getCO2(Configuration_t config);
+void Configuration_free(Configuration_t config);

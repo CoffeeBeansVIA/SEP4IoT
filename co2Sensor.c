@@ -4,6 +4,7 @@
 #include <mh_z19.h>
 #include <time.h>
 #include <event_groups.h>
+#include "co2Sensor.h"
 
 void mh_z19_callBack(uint16_t ppm);
 uint16_t lastCO2ppm;
@@ -12,10 +13,10 @@ mh_z19_returnCode_t rc;
 EventGroupHandle_t measureEventGroup;
 EventGroupHandle_t readyEventGroup;
 
-void mutexPuts(char* str);
+//void mutexPuts(char* str);
 void co2sensorTask(void* pvParameters);
-#define BIT_TASK_CO2_MEASURE (1 << 0)
-#define BIT_TASK_CO2_READY (1 << 1)
+//#define BIT_TASK_CO2_MEASURE (1 << 0)
+//#define BIT_TASK_CO2_READY (1 << 1)
  
 
 void CO2_handler_create(){
