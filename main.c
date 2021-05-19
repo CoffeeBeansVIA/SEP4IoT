@@ -24,7 +24,7 @@ SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 
 
-SensorDataPackage_t sensorDataPackage
+SensorDataPackage_t sensorDataPackage;
 
 
 // Event groups
