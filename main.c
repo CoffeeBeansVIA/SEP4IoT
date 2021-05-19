@@ -27,6 +27,10 @@ SemaphoreHandle_t DownLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 SemaphoreHandle_t windowControllerMutex;
 
+
+SensorDataPackage_t sensorDataPackage
+
+
 // Event groups
 char buff[63];
 EventGroupHandle_t measureEventGroup = NULL;
@@ -238,7 +242,7 @@ void UL_handler_send( void *pvParameters )
 		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
 		// Payload
-		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
+		sensorDataPackage = SensorDataPackage_create();
 		
 		SensorDataPackage_setCO2(sensorDataPackage,getCO2());/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
 		
@@ -261,11 +265,12 @@ void UL_handler_send( void *pvParameters )
 			
 			SensorDataPackage_t receivedDataPackage = SensorDataPackage_create();
 			
-			int xReceivedBytes = xMessageBufferReceive( // Does not work properly... Fuck it, will do it the other way for now.
-			UpLinkMessageBuffer,
-			&receivedDataPackage,
-			size,
-			xBlockTime
+			int xReceivedBytes = xMessageBufferReceive(
+				UpLinkMessageBuffer,
+				&receivedDataPackage,
+				size,
+				xBlockTime
+
 			);
 			
 			if(xReceivedBytes > 0){
