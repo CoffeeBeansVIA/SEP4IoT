@@ -14,6 +14,8 @@
 
 // MISC includes
 #include "SensorDataPackage.h"
+#include "window_controller.h"
+#include "Configuration.h"
 
 /*------------------------DEFINES------------------------*/
 // Mutexes
@@ -22,6 +24,11 @@ SemaphoreHandle_t measureCo2Mutex;
 SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
+SemaphoreHandle_t windowMutex;
+//SemaphoreHandle_t DownLinkUpdateMutex;
+//SemaphoreHandle_t DownLinkReceiveMutex;
+
+SensorDataPackage_t sensorDataPackage;
 
 // Event groups
 char buff[63];
@@ -42,6 +49,7 @@ void UL_handler_send( void *pvParameters );
 uint16_t getCO2();
 void UL_handler_create();
 void CO2_handler_create();
+//void DL_handler_create();
 
 /*-----------------------PROCEDURES----------------------*/
 void create_semaphores(void){
@@ -65,10 +73,23 @@ void create_semaphores(void){
 		UpLinkReceiveMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
 	}
+	/*if ( NULL == DownLinkReceiveMutex ){
+		DownLinkReceiveMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake(DownLinkReceiveMutex, portMAX_DELAY);
+	}
+	
+	if(NULL == DownLinkUpdateMutex){
+		DownLinkUpdateMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake(DownLinkUpdateMutex, portMAX_DELAY);
+	}*/
 	
 	if(NULL == putsMutex){
 		putsMutex = xSemaphoreCreateMutex();
 		xSemaphoreGive( putsMutex );
+	}
+	if(NULL == windowMutex){
+		windowMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake( windowMutex,portMAX_DELAY);
 	}
 	
 }
@@ -112,7 +133,7 @@ void mutexPuts(char* str){
 }
 
 void initialiseSystem( void ){
-
+	
 	create_semaphores();
 	
 	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
@@ -133,7 +154,8 @@ void initialiseSystem( void ){
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-	
+	//rcServoTask_create(); //it doesn't work because of this task!!!!
+	//DL_handler_create();
 	UL_handler_create();
 	CO2_handler_create();
 	create_tasks();
@@ -145,7 +167,7 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 	
 	for(;;)
 	{
-		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
+		xSemaphoreTake(windowMutex, portMAX_DELAY);
 		xEventGroupClearBits(readyEventGroup,BIT_TASK_CO2_READY);
 		xEventGroupSetBits(measureEventGroup,BIT_TASK_CO2_MEASURE);
 		
@@ -168,7 +190,7 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 void UL_handler_send( void *pvParameters )
 {
 	for(;;){
-		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
+		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY); 
 		size_t xBytesSent;
 		// Payload
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
@@ -221,8 +243,9 @@ int main(void){
 	xSemaphoreTake(sysInitMutex , portMAX_DELAY);
 	mutexPuts("Program Started!!\n");
 	
-	xSemaphoreGive(UpLinkReceiveMutex);
+	xSemaphoreGive(windowMutex);
 	
 	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler.
+	
 	//Execution will never reach here.
 }

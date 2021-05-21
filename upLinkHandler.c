@@ -82,7 +82,6 @@ void UL_receive_task( void *pvParameters )
 
 		status_leds_shortPuls(led_ST4);  // OPTIONAL
 		printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
-		vTaskDelay(pdMS_TO_TICKS(150000));
 		xSemaphoreGive(UpLinkReceiveMutex);
 			 
 		 
