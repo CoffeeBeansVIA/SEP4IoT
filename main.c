@@ -25,11 +25,10 @@ SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 SemaphoreHandle_t windowMutex;
-//SemaphoreHandle_t DownLinkUpdateMutex;
-//SemaphoreHandle_t DownLinkReceiveMutex;
+//SemaphoreHandle_t DownLinkReceiveUpdateMutex;
 
 SensorDataPackage_t sensorDataPackage;
-
+Configuration_t configuration;
 // Event groups
 char buff[63];
 EventGroupHandle_t measureEventGroup = NULL;
@@ -73,15 +72,11 @@ void create_semaphores(void){
 		UpLinkReceiveMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
 	}
-	/*if ( NULL == DownLinkReceiveMutex ){
+	/*if ( NULL == DownLinkReceiveUpdateMutex ){
 		DownLinkReceiveMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake(DownLinkReceiveMutex, portMAX_DELAY);
 	}
-	
-	if(NULL == DownLinkUpdateMutex){
-		DownLinkUpdateMutex = xSemaphoreCreateMutex();
-		xSemaphoreTake(DownLinkUpdateMutex, portMAX_DELAY);
-	}*/
+	*/
 	
 	if(NULL == putsMutex){
 		putsMutex = xSemaphoreCreateMutex();
@@ -133,6 +128,7 @@ void mutexPuts(char* str){
 }
 
 void initialiseSystem( void ){
+	Configuration_t configuration = Configuration_create();
 	
 	create_semaphores();
 	
@@ -154,7 +150,7 @@ void initialiseSystem( void ){
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-	//rcServoTask_create(); //it doesn't work because of this task!!!!
+	rcServoTask_create(); //it doesn't work because of this task!!!!
 	//DL_handler_create();
 	UL_handler_create();
 	CO2_handler_create();
