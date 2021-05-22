@@ -1,9 +1,9 @@
-#include "ATMEGA_FreeRTOS.h"
-#include "semphr.h"
+//----------------------------INCLUDES----------------------------
 #include "Configuration.h"
-#include <stdint.h>
+//-----------------------------------------------------------------
 
 
+//----------------------------STRUCT------------------------------
 typedef struct Configuration {
 	uint16_t co2Data;
 	uint16_t co2MaxFluct;
@@ -12,7 +12,10 @@ typedef struct Configuration {
 	uint16_t humidityData;
 	uint16_t humidityMaxFluct;
 } Configuration_st;
+//-----------------------------------------------------------------
 
+
+//----------------------------FUNCTIONS------------------------------
 Configuration_t Configuration_create(){
 	Configuration_t config = pvPortMalloc(sizeof(Configuration_t));
 	config->co2Data = 700;
@@ -61,3 +64,4 @@ uint16_t Configuration_getTemperature(Configuration_t config){
 uint16_t Configuration_getHumidity(Configuration_t config){
 	return config->humidityData;
 }
+//-----------------------------------------------------------------

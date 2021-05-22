@@ -234,6 +234,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="co2Sensor.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Configuration.c">
       <SubType>compile</SubType>
     </Compile>
@@ -247,6 +250,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="upLinkHandler.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="upLinkHandler.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="window_controller.c">
@@ -369,9 +375,6 @@
     <Compile Include="FreeRTOS\src\variantHooks.c">
       <SubType>compile</SubType>
     </Compile>
-    <None Include="LoRaWANHandler.c">
-      <SubType>compile</SubType>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="FreeRTOS\" />
