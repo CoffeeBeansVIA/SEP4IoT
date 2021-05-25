@@ -6,6 +6,7 @@
 #include "window_controller.h"
 #include "co2Sensor.h"
 #include "upLinkHandler.h"
+#include "DownLinkHandler.h"
 
 /*-----------------------PROCEDURES----------------------*/
 void create_semaphores(void){
@@ -81,6 +82,8 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 
 void UL_handler_send( void *pvParameters )
 {
+	const TickType_t x100ms = pdMS_TO_TICKS( 100 );
+	
 	for(;;){
 		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
@@ -88,8 +91,6 @@ void UL_handler_send( void *pvParameters )
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
 		
 		SensorDataPackage_setCO2(sensorDataPackage,getCO2());/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
-		
-		const TickType_t x100ms = pdMS_TO_TICKS( 100 );
 		
 		int size = sizeof( sensorDataPackage );
 		
@@ -99,10 +100,10 @@ void UL_handler_send( void *pvParameters )
 		if( xBytesSent != size )
 		{
 			// The call to xMessageBufferSend() timed out before there was enough space in the buffer for the data to be written.
-			// Wait 2.5 minutes to retry
 			SensorDataPackage_free(sensorDataPackage);
+			// Wait 2.5 minutes to retry
 			vTaskDelay(pdMS_TO_TICKS(150000));
-			}else{
+		}else{
 			// Try to receive
 			const TickType_t xBlockTime = pdMS_TO_TICKS( 200 );
 			
@@ -116,12 +117,12 @@ void UL_handler_send( void *pvParameters )
 			);
 			
 			if(xReceivedBytes > 0){
-				char buff [63] ;
+				char buff [63];
 				sprintf(buff, "UL_handler_send Co2 = (%d) -> OK", SensorDataPackage_getCO2(receivedDataPackage));
 				mutexPuts(buff);
-				SensorDataPackage_free(receivedDataPackage);
 				xSemaphoreGive(UpLinkSendMutex);
 			}
+			SensorDataPackage_free(receivedDataPackage);
 		}
 	}
 }
@@ -170,11 +171,11 @@ void initialiseSystem( void ){
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-	rcServoTask_create(); //it doesn't work because of this task!!!!
-	//DL_handler_create();
-	UL_handler_create();
 	CO2_handler_create();
 	create_tasks();
+	UL_handler_create();
+	DL_handler_create();
+	rcServoTask_create();
 
 	xSemaphoreGive(sysInitMutex);
 }

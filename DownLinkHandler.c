@@ -19,21 +19,18 @@ void DL_handler_create()
 
 void DL_receive_update_task(void *pvParameters)
 {
-	
 	size_t xReceivedBytes;
-	const TickType_t xBlockTime = pdMS_TO_TICKS( 100 );
-	int size = sizeof(configuration);
+	int size = sizeof(lora_driver_payload_t);
+	lora_driver_payload_t _downlink_payload;
 	for(;;)
 	{
 		//xSemaphoreTake();
-		
-		lora_driver_payload_t _downlink_payload;
 		
 		xReceivedBytes = xMessageBufferReceive( 
 		DownLinkMessageBuffer,
 		&_downlink_payload,
 		size,
-		xBlockTime
+		portMAX_DELAY
 		);
 		
 		if(xReceivedBytes>0)
@@ -54,13 +51,7 @@ void DL_receive_update_task(void *pvParameters)
 				Configuration_setCO2(configuration, maxCo2Setting);
 				Configuration_setCO2MaxFluct(configuration,maxCO2Fluct);
 				
-				mutexPuts("new value set in configuration \n");
-				char buff[63];
-				sprintf(buff, "new co2 value is %d \n", Configuration_getCO2(configuration));
-				mutexPuts(buff);
-				
-				vTaskDelay(pdMS_TO_TICKS(300000));
-			
+				mutexPuts("new value set in configuration");
 			}
 			else
 			{
