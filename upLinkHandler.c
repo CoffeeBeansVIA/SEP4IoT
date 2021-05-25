@@ -90,7 +90,7 @@ void UL_receive_task( void *pvParameters )
 
  }
  
- static void _lora_setup(void){
+void _lora_setup(void){
 	 lora_driver_returnCode_t rc;
 	 status_leds_slowBlink(led_ST2); // OPTIONAL: Led the green led blink slowly while we are setting up LoRa
 

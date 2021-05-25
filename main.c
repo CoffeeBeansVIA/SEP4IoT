@@ -6,6 +6,7 @@
 #include "window_controller.h"
 #include "co2Sensor.h"
 #include "upLinkHandler.h"
+#include "DownLinkHandler.h"
 
 /*-----------------------PROCEDURES----------------------*/
 void create_semaphores(void){
@@ -170,9 +171,9 @@ void initialiseSystem( void ){
 	lora_driver_initialise(1, DownLinkMessageBuffer);
 	// Create LoRaWAN task and start it up with priority 3
 	
-	rcServoTask_create(); //it doesn't work because of this task!!!!
-	//DL_handler_create();
+	rcServoTask_create();
 	UL_handler_create();
+	//DL_handler_create();
 	CO2_handler_create();
 	create_tasks();
 

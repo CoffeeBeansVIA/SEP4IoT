@@ -37,5 +37,5 @@ EventGroupHandle_t readyEventGroup;
 // MessageBuffers
 int UpLinkSize;
 int DownLinkSize;
-static MessageBufferHandle_t UpLinkMessageBuffer;
-static MessageBufferHandle_t DownLinkMessageBuffer;
+MessageBufferHandle_t UpLinkMessageBuffer;
+MessageBufferHandle_t DownLinkMessageBuffer;

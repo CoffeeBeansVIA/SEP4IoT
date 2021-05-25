@@ -12,7 +12,7 @@
 //----------------------------FUNCTIONS----------------------------
 void UL_handler_create();
 void UL_receive_task( void *pvParameters );
-static void _lora_setup();
+void _lora_setup();
 
 //-----------------------------------------------------------------
 
