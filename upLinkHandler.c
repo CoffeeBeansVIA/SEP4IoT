@@ -30,6 +30,18 @@ void UL_receive_task( void *pvParameters )
 	_lora_setup();
 	
 	taskEXIT_CRITICAL();
+	
+	//sending 'hardware started message'
+//lora_driver_payload_t _welcome_payload;
+	
+	//_welcome_payload.bytes[0] = 100 >> 8;
+	//_welcome_payload.bytes[1] = 100 & 0xFF;
+	//_welcome_payload.len = 2;
+	//_welcome_payload.portNo = 3;
+	
+	//status_leds_shortPuls(led_ST4);  // OPTIONAL
+	//printf("Welcome Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_welcome_payload)));
+	
 	 for(;;){
 		 
 		 xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
