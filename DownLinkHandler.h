@@ -6,9 +6,6 @@
 #include <stdint-gcc.h>
 #include "Configuration.h"
 
-//----------------------------MUTEXES----------------------------
-void mutexPuts(char* str);
-SemaphoreHandle_t DownLinkReceiveUpdateMutex;
 //-----------------------------------------------------------------
 
 
