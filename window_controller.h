@@ -2,23 +2,9 @@
 #ifndef WINDOWCONTROLLER_H_
 #define WINDOWCONTROLLER_H_
 //----------------------------INCLUDES----------------------------
-#include <ATMEGA_FreeRTOS.h>
-#include <task.h>
+#include "global.h"
 #include <stdbool.h>
 #include <rc_servo.h>
-#include <semphr.h>
-#include "Configuration.h"
-#include <ATMEGA_FreeRTOS.h>
-#include <stdio_driver.h>
-#include <stdio.h>
-#include <avr/io.h>
-//-----------------------------------------------------------------
-
-
-//----------------------------MUTEXES----------------------------
-SemaphoreHandle_t windowMutex;
-SemaphoreHandle_t UpLinkReceiveMutex;
-void mutexPuts(char* str);
 //-----------------------------------------------------------------
 
 

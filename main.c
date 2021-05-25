@@ -1,54 +1,11 @@
 /*------------------------INCLUDES------------------------*/
-#include <stdio.h>
-#include <avr/io.h>
-#include <ATMEGA_FreeRTOS.h>
-#include <task.h>
-#include <semphr.h>
-#include <stdio_driver.h>
-#include <serial.h>
+#include "global.h"
 #include <hih8120.h>
-#include <event_groups.h>
-// Needed for LoRaWAN
-#include <lora_driver.h>
-#include <status_leds.h>
 
-// MISC includes
-#include "SensorDataPackage.h"
+// Miscellaneous includes
 #include "window_controller.h"
-#include "Configuration.h"
-
-/*------------------------DEFINES------------------------*/
-// Mutexes
-SemaphoreHandle_t sysInitMutex;
-SemaphoreHandle_t measureCo2Mutex;
-SemaphoreHandle_t UpLinkSendMutex;
-SemaphoreHandle_t UpLinkReceiveMutex;
-SemaphoreHandle_t putsMutex;
-SemaphoreHandle_t windowMutex;
-//SemaphoreHandle_t DownLinkReceiveUpdateMutex;
-
-SensorDataPackage_t sensorDataPackage;
-Configuration_t configuration;
-// Event groups
-char buff[63];
-EventGroupHandle_t measureEventGroup = NULL;
-#define BIT_TASK_CO2_MEASURE (1<<0)
-EventGroupHandle_t readyEventGroup = NULL;
-#define BIT_TASK_CO2_READY (1<<1)
-
-// MessageBuffers
-const int UpLinkSize = sizeof(SensorDataPackage_t)*2;
-const int DownLinkSize = sizeof(lora_driver_payload_t)*2;
-static MessageBufferHandle_t UpLinkMessageBuffer = NULL;
-static MessageBufferHandle_t DownLinkMessageBuffer = NULL;
-
-// Tasks & functions
-void trigger_CO2_measurement_task( void *pvParameters );
-void UL_handler_send( void *pvParameters );
-uint16_t getCO2();
-void UL_handler_create();
-void CO2_handler_create();
-//void DL_handler_create();
+#include "co2Sensor.h"
+#include "upLinkHandler.h"
 
 /*-----------------------PROCEDURES----------------------*/
 void create_semaphores(void){
@@ -86,7 +43,6 @@ void create_semaphores(void){
 		windowMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake( windowMutex,portMAX_DELAY);
 	}
-	
 }
 
 void create_event_groups(void){
@@ -97,66 +53,6 @@ void create_event_groups(void){
 void create_message_buffers(void){
 	UpLinkMessageBuffer = xMessageBufferCreate(UpLinkSize);
 	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
-}
-
-void create_tasks(void){
-	xTaskCreate(
-	trigger_CO2_measurement_task
-	,  "Trigger CO2 Measurement Task"
-	,  configMINIMAL_STACK_SIZE
-	,  NULL
-	,  3
-	,  NULL );
-	
-	xTaskCreate(
-	UL_handler_send
-	,  "UpLink Handler Send"  // A name just for humans
-	,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack High water
-	,  NULL  // Params
-	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-	,  NULL );
-
-}
-
-/*-------------------------------------------------------*/
-
-void mutexPuts(char* str){
-	if(xSemaphoreTake(putsMutex, portMAX_DELAY) == pdTRUE){
-		puts(str);
-		xSemaphoreGive(putsMutex);
-	}
-}
-
-void initialiseSystem( void ){
-	Configuration_t configuration = Configuration_create();
-	
-	create_semaphores();
-	
-	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
-	stdio_initialise(ser_USART0);
-	
-	// Set output ports for LEDs used in the example
-	DDRA |= _BV(DDA0) | _BV(DDA7);
-	
-	create_event_groups();
-	
-	create_message_buffers();
-
-	// LoRaWAN initialization
-	// Status LEDs driver
-	status_leds_initialise(5); // Priority 5 for internal task
-	
-	// Initialize the LoRaWAN driver with down-link buffer
-	lora_driver_initialise(1, DownLinkMessageBuffer);
-	// Create LoRaWAN task and start it up with priority 3
-	
-	rcServoTask_create(); //it doesn't work because of this task!!!!
-	//DL_handler_create();
-	UL_handler_create();
-	CO2_handler_create();
-	create_tasks();
-
-	xSemaphoreGive(sysInitMutex);
 }
 
 void trigger_CO2_measurement_task( void *pvParameters ){
@@ -186,7 +82,7 @@ void trigger_CO2_measurement_task( void *pvParameters ){
 void UL_handler_send( void *pvParameters )
 {
 	for(;;){
-		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY); 
+		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
 		// Payload
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
@@ -206,17 +102,17 @@ void UL_handler_send( void *pvParameters )
 			// Wait 2.5 minutes to retry
 			SensorDataPackage_free(sensorDataPackage);
 			vTaskDelay(pdMS_TO_TICKS(150000));
-		}else{
+			}else{
 			// Try to receive
 			const TickType_t xBlockTime = pdMS_TO_TICKS( 200 );
 			
 			SensorDataPackage_t receivedDataPackage = SensorDataPackage_create();
 			
-			int xReceivedBytes = xMessageBufferReceive( // Does not work properly... Fuck it, will do it the other way for now.
-				UpLinkMessageBuffer,
-				&receivedDataPackage,
-				size,
-				xBlockTime
+			int xReceivedBytes = xMessageBufferReceive( // Does not work properly... Will do it the other way for now.
+			UpLinkMessageBuffer,
+			&receivedDataPackage,
+			size,
+			xBlockTime
 			);
 			
 			if(xReceivedBytes > 0){
@@ -228,6 +124,59 @@ void UL_handler_send( void *pvParameters )
 			}
 		}
 	}
+}
+
+void create_tasks(void){
+	xTaskCreate(
+	trigger_CO2_measurement_task
+	,  "Trigger CO2 Measurement Task"
+	,  configMINIMAL_STACK_SIZE
+	,  NULL
+	,  3
+	,  NULL );
+	
+	xTaskCreate(
+	UL_handler_send
+	,  "UpLink Handler Send"  // A name just for humans
+	,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack High water
+	,  NULL  // Params
+	,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+	,  NULL );
+
+}
+
+/*-------------------------------------------------------*/
+
+void initialiseSystem( void ){
+	configuration = Configuration_create();
+	
+	create_semaphores();
+	
+	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
+	stdio_initialise(ser_USART0);
+	
+	// Set output ports for LEDs used in the example
+	DDRA |= _BV(DDA0) | _BV(DDA7);
+	
+	create_event_groups();
+	
+	create_message_buffers();
+
+	// LoRaWAN initialization
+	// Status LEDs driver
+	status_leds_initialise(5); // Priority 5 for internal task
+	
+	// Initialize the LoRaWAN driver with down-link buffer
+	lora_driver_initialise(1, DownLinkMessageBuffer);
+	// Create LoRaWAN task and start it up with priority 3
+	
+	rcServoTask_create(); //it doesn't work because of this task!!!!
+	//DL_handler_create();
+	UL_handler_create();
+	CO2_handler_create();
+	create_tasks();
+
+	xSemaphoreGive(sysInitMutex);
 }
 
 /*---------------------------MAIN----------------------------*/

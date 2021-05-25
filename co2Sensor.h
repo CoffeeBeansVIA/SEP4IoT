@@ -2,29 +2,10 @@
 #ifndef CO2SENSOR_H_
 #define CO2SENSOR_H_
 //----------------------------INCLUDES----------------------------
-#include <stdio.h>
-#include <ATMEGA_FreeRTOS.h>
-#include <task.h>
+
+#include "global.h"
 #include <mh_z19.h>
 #include <time.h>
-#include <event_groups.h>
-//----------------------------------------------------------------- 
-
-
-//----------------------------EVENT GROUPS-------------------------
-EventGroupHandle_t measureEventGroup;
-EventGroupHandle_t readyEventGroup;
-//-----------------------------------------------------------------
-
-
-//----------------------------MUTEXES------------------------------
-void mutexPuts(char* str);
-//-----------------------------------------------------------------
-
-
-//----------------------------DEFINES------------------------------
-#define BIT_TASK_CO2_MEASURE (1 << 0)
-#define BIT_TASK_CO2_READY (1 << 1)
 //-----------------------------------------------------------------
 
 

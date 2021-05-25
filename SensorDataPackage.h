@@ -2,9 +2,7 @@
 #ifndef SENSORDATAPACKAGE_H_
 #define SENSORDATAPACKAGE_H_
 //----------------------------INCLUDES----------------------------
-#include <stdint.h>
-#include <ATMEGA_FreeRTOS.h>
-#include <stdint.h>
+#include "global.h"
 //-----------------------------------------------------------------
 
 

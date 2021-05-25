@@ -34,12 +34,16 @@ void Configuration_free(Configuration_t config){
 void Configuration_setCO2(Configuration_t config, uint16_t _co2Data){
 	
 	config->co2Data = _co2Data;
-	puts("Co2 set to %d \n",_co2Data);
+	char buff[63];
+	sprintf(buff, "Co2 set to %d \n",_co2Data);
+	mutexPuts(buff);
 }
 
 void Configuration_setCO2MaxFluct(Configuration_t config, uint16_t _co2MaxFluct){
 	config->co2MaxFluct = _co2MaxFluct;
-	puts("Co2 Maximum Fluctuation set to %d \n",_co2MaxFluct);
+	char buff[63];	
+	sprintf(buff, "Co2 Maximum Fluctuation set to %d \n",_co2MaxFluct);
+	mutexPuts(buff);
 }
 
 void Configuration_setTemperature(Configuration_t config, uint16_t _temperatureData){

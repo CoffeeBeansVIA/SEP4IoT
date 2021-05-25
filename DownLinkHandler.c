@@ -32,7 +32,7 @@ void DL_receive_update_task(void *pvParameters)
 		xReceivedBytes = xMessageBufferReceive( 
 		DownLinkMessageBuffer,
 		&_downlink_payload,
-		5,
+		size,
 		xBlockTime
 		);
 		

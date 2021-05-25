@@ -2,17 +2,14 @@
 #ifndef CONFIGURATION_H_
 #define CONFIGURATION_H_
 //----------------------------INCLUDES----------------------------
-#include <stdint.h>
-#include "ATMEGA_FreeRTOS.h"
-#include "semphr.h"
-#include <stdint.h>
+#include "global.h"
 //-----------------------------------------------------------------
 
 
 //-------------------DEFINE TYPE CONFIGURATION---------------------
 typedef struct Configuration* Configuration_t;
 //-----------------------------------------------------------------
-
+Configuration_t configuration;
 
 //----------------------------FUNCTIONS----------------------------
 Configuration_t Configuration_create();

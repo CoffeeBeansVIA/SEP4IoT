@@ -249,6 +249,12 @@
     <Compile Include="DownLinkHandler.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="global.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="global.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="upLinkHandler.c">
       <SubType>compile</SubType>
     </Compile>
