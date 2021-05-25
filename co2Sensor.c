@@ -1,23 +1,9 @@
-#include <stdio.h>
-#include <ATMEGA_FreeRTOS.h>
-#include <task.h>
-#include <mh_z19.h>
-#include <time.h>
-#include <event_groups.h>
+//----------------------------INCLUDES----------------------------
+#include "co2Sensor.h"
+//-----------------------------------------------------------------
 
-void mh_z19_callBack(uint16_t ppm);
-uint16_t lastCO2ppm;
-mh_z19_returnCode_t rc;
-
-EventGroupHandle_t measureEventGroup;
-EventGroupHandle_t readyEventGroup;
-
-void mutexPuts(char* str);
-void co2sensorTask(void* pvParameters);
-#define BIT_TASK_CO2_MEASURE (1 << 0)
-#define BIT_TASK_CO2_READY (1 << 1)
  
-
+//----------------------------FUNCTIONS----------------------------
 void CO2_handler_create(){
 	// The parameter is the USART port the MH-Z19 sensor is connected to - in this case USART3
 	mh_z19_initialise(ser_USART3);
@@ -68,3 +54,4 @@ void waitFor (unsigned int secs) {
 	unsigned int retTime = time(0) + secs;   // Get finishing time.
 	while (time(0) < retTime);               // Loop until it arrives.
 }
+//-----------------------------------------------------------------

@@ -234,6 +234,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="co2Sensor.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Configuration.c">
       <SubType>compile</SubType>
     </Compile>
@@ -246,7 +249,16 @@
     <Compile Include="DownLinkHandler.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="global.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="global.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="upLinkHandler.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="upLinkHandler.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="window_controller.c">
@@ -255,15 +267,6 @@
     <Compile Include="window_controller.h">
       <SubType>compile</SubType>
     </Compile>
-    <None Include="old\co2Sensor_old.c">
-      <SubType>compile</SubType>
-    </None>
-    <None Include="old\main_old.c">
-      <SubType>compile</SubType>
-    </None>
-    <None Include="old\upLinkHandler_old.c">
-      <SubType>compile</SubType>
-    </None>
     <Compile Include="co2Sensor.c">
       <SubType>compile</SubType>
     </Compile>
@@ -369,16 +372,12 @@
     <Compile Include="FreeRTOS\src\variantHooks.c">
       <SubType>compile</SubType>
     </Compile>
-    <None Include="LoRaWANHandler.c">
-      <SubType>compile</SubType>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="FreeRTOS\" />
     <Folder Include="FreeRTOS\Example\" />
     <Folder Include="FreeRTOS\FreeRTOSTraceDriver\" />
     <Folder Include="FreeRTOS\src\" />
-    <Folder Include="old" />
   </ItemGroup>
   <ItemGroup>
     <None Include="FreeRTOS\.git">

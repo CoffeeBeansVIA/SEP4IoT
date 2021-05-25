@@ -1,9 +1,9 @@
-#include "ATMEGA_FreeRTOS.h"
-#include "semphr.h"
+//----------------------------INCLUDES----------------------------
 #include "Configuration.h"
-#include <stdint.h>
+//-----------------------------------------------------------------
 
 
+//----------------------------STRUCT------------------------------
 typedef struct Configuration {
 	uint16_t co2Data;
 	uint16_t co2MaxFluct;
@@ -12,7 +12,10 @@ typedef struct Configuration {
 	uint16_t humidityData;
 	uint16_t humidityMaxFluct;
 } Configuration_st;
+//-----------------------------------------------------------------
 
+
+//----------------------------FUNCTIONS------------------------------
 Configuration_t Configuration_create(){
 	Configuration_t config = pvPortMalloc(sizeof(Configuration_t));
 	config->co2Data = 700;
@@ -31,12 +34,16 @@ void Configuration_free(Configuration_t config){
 void Configuration_setCO2(Configuration_t config, uint16_t _co2Data){
 	
 	config->co2Data = _co2Data;
-	puts("Co2 set to %d \n",_co2Data);
+	char buff[63];
+	sprintf(buff, "Co2 set to %d \n",_co2Data);
+	mutexPuts(buff);
 }
 
 void Configuration_setCO2MaxFluct(Configuration_t config, uint16_t _co2MaxFluct){
 	config->co2MaxFluct = _co2MaxFluct;
-	puts("Co2 Maximum Fluctuation set to %d \n",_co2MaxFluct);
+	char buff[63];	
+	sprintf(buff, "Co2 Maximum Fluctuation set to %d \n",_co2MaxFluct);
+	mutexPuts(buff);
 }
 
 void Configuration_setTemperature(Configuration_t config, uint16_t _temperatureData){
@@ -61,3 +68,4 @@ uint16_t Configuration_getTemperature(Configuration_t config){
 uint16_t Configuration_getHumidity(Configuration_t config){
 	return config->humidityData;
 }
+//-----------------------------------------------------------------

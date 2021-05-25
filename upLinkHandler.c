@@ -1,33 +1,9 @@
-#include <stdio.h>
-#include <lora_driver.h>
-#include <message_buffer.h>
-#include <status_leds.h>
-#include <semphr.h>
-#include "SensorDataPackage.h"
-
-//static lora_driver_payload_t uplink_payload;
-MessageBufferHandle_t UpLinkMessageBuffer;
-
-// Mutex
-void mutexPuts(char* str);
-SemaphoreHandle_t UpLinkReceiveMutex;
-SemaphoreHandle_t UpLinkSendMutex;
-
-const int UpLinkSize;
-
-// Parameters for OTAA join - You have got these in a mail from IHA
-#define LORA_appEUI "926F9B5931FCA94C"
-#define LORA_appKEY "1D2EB57B831FBDEF807978AE930786E4"
-
+//----------------------------INCLUDES---------------------------
+#include "upLinkHandler.h"
+//-------------------------------------------------------------
 static char _out_buf[100];
 
-// Functions
-uint16_t getCO2();
- static void _lora_setup(void);
- void UL_receive_task( void *pvParameters );
-
-/*-------------------------------------------------------*/
-
+//--------------------------FUNCTIONS--------------------------
 void UL_handler_create(){
 
 	xTaskCreate(
@@ -114,8 +90,7 @@ void UL_receive_task( void *pvParameters )
 
  }
  
- static void _lora_setup(void)
- {
+ static void _lora_setup(void){
 	 lora_driver_returnCode_t rc;
 	 status_leds_slowBlink(led_ST2); // OPTIONAL: Led the green led blink slowly while we are setting up LoRa
 
@@ -183,5 +158,7 @@ void UL_receive_task( void *pvParameters )
 			 taskYIELD();
 		 }
 	 }
- }
+	
 
+ }
+ //-------------------------------------------------------------

@@ -1,11 +1,16 @@
+//----------------------------INCLUDES----------------------------
 #include "SensorDataPackage.h"
-#include <ATMEGA_FreeRTOS.h>
-#include <stdint.h>
+//-----------------------------------------------------------------
 
+
+//----------------------------STRUCT------------------------------
 typedef struct SensorDataPackage {
 	uint16_t co2Data;
 } SensorDataPackage_st;
+//-----------------------------------------------------------------
 
+
+//----------------------------FUNCTIONS----------------------------
 SensorDataPackage_t SensorDataPackage_create(){
 	SensorDataPackage_t packet = pvPortMalloc(sizeof(SensorDataPackage_st));
 	packet->co2Data = -1;
@@ -28,3 +33,4 @@ void SensorDataPackage_setCO2(SensorDataPackage_t packet, uint16_t _co2Data){
 uint16_t SensorDataPackage_getCO2(SensorDataPackage_t packet){
 	return packet->co2Data;
 }
+//-----------------------------------------------------------------
