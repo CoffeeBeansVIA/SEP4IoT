@@ -18,8 +18,10 @@ float _lastHumidity;
 
 //----------------------------FUNCTIONS----------------------------
 void temperatureHumiditySensor_create();
+void HumidityTemperatureSensorTask(void *pvParameters);
 float humidityTemperatureSensor_getHumidity();
 float humidityTemperatureSensor_getTemperature();
+void _setup_temperature_humidity_driver();
 //-----------------------------------------------------------------
 
 #endif

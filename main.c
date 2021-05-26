@@ -32,7 +32,6 @@ void create_semaphores(void){
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
 	}
 	
-	
 	if(NULL == putsMutex){
 		putsMutex = xSemaphoreCreateMutex();
 		xSemaphoreGive( putsMutex );
@@ -41,9 +40,9 @@ void create_semaphores(void){
 		windowMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake( windowMutex,portMAX_DELAY);
 	}
-	if(NULL == temperatureMutex){
-		temperatureMutex = xSemaphoreCreateMutex();
-		xSemaphoreTake( temperatureMutex,portMAX_DELAY);
+	if(NULL == measureTempMutex){
+		measureTempMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake( measureTempMutex,portMAX_DELAY);
 	}
 }
 
@@ -57,11 +56,33 @@ void create_message_buffers(void){
 	DownLinkMessageBuffer = xMessageBufferCreate(DownLinkSize);
 }
 
+void trigger_temp_measurement_task( void *pvParams ){
+	for (;;)
+	{
+		xSemaphoreTake(windowMutex, portMAX_DELAY);
+		xEventGroupClearBits(readyEventGroup,HUMIDITY_TEMPERATURE_MEASURE_BIT);
+		xEventGroupSetBits(measureEventGroup,HUMIDITY_TEMPERATURE_MEASURE_BIT);
+		
+		xEventGroupWaitBits(
+		readyEventGroup,
+		HUMIDITY_TEMPERATURE_READY_BIT,
+		pdTRUE,
+		pdTRUE,
+		portMAX_DELAY);
+		
+		xEventGroupClearBits(measureEventGroup, HUMIDITY_TEMPERATURE_MEASURE_BIT);
+		char buf[63];
+		sprintf(buf, "Temp Measurement: %f \nHumidity Measurement: %f", humidityTemperatureSensor_getTemperature(), humidityTemperatureSensor_getHumidity());
+		mutexPuts(buf);
+		xSemaphoreGive(measureTempMutex);
+	}
+}
+
 void trigger_CO2_measurement_task( void *pvParameters ){
 	
 	for(;;)
 	{
-		xSemaphoreTake(windowMutex, portMAX_DELAY);
+		xSemaphoreTake(measureTempMutex, portMAX_DELAY);
 		xEventGroupClearBits(readyEventGroup,BIT_TASK_CO2_READY);
 		xEventGroupSetBits(measureEventGroup,BIT_TASK_CO2_MEASURE);
 		
@@ -86,7 +107,7 @@ void UL_handler_send( void *pvParameters )
 	const TickType_t x100ms = pdMS_TO_TICKS( 100 );
 	
 	for(;;){
-		xSemaphoreTake( temperatureMutex , portMAX_DELAY);
+		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
 		size_t xBytesSent;
 		// Payload
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
@@ -124,8 +145,8 @@ void UL_handler_send( void *pvParameters )
 				char buff [63];
 				sprintf(buff, "UL_handler_send Co2 = (%d) -> OK", SensorDataPackage_getCO2(receivedDataPackage));
 				//new sensors
-				sprintf(buff, "UL_handler_send Humidity = (%d) -> OK", SensorDataPackage_getHumidity(receivedDataPackage));
-				sprintf(buff,"UL_handler_send Temperature = (%d) -> OK", SensorDataPackage_getTemperature(receivedDataPackage));
+				sprintf(buff, "UL_handler_send Humidity = (%f) -> OK", SensorDataPackage_getHumidity(receivedDataPackage));
+				sprintf(buff,"UL_handler_send Temperature = (%f) -> OK", SensorDataPackage_getTemperature(receivedDataPackage));
 				mutexPuts(buff);
 				
 				xSemaphoreGive(UpLinkSendMutex);
@@ -136,6 +157,15 @@ void UL_handler_send( void *pvParameters )
 }
 
 void create_tasks(void){
+	
+	xTaskCreate(
+	trigger_temp_measurement_task
+	,  "Trigger Temp/Humid Measurement Task"
+	,  configMINIMAL_STACK_SIZE
+	,  NULL
+	,  3
+	,  NULL );
+
 	xTaskCreate(
 	trigger_CO2_measurement_task
 	,  "Trigger CO2 Measurement Task"
@@ -181,7 +211,7 @@ void initialiseSystem( void ){
 	
 	CO2_handler_create();
 	temperatureHumiditySensor_create();
-	create_tasks();
+	create_tasks(); // Trigger_CO2 & UL_Send
 	UL_handler_create();
 	DL_handler_create();
 	rcServoTask_create();

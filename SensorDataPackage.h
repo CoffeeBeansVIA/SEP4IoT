@@ -19,10 +19,10 @@ uint16_t SensorDataPackage_getCO2(SensorDataPackage_t packet);
 void SensorDataPackage_free(SensorDataPackage_t packet);
 
 //new sensors
-uint16_t SensorDataPackage_getTemperature(SensorDataPackage_t packet);
-uint16_t SensorDataPackage_getHumidity(SensorDataPackage_t packet);
-void SensorDataPackage_setTemperature(SensorDataPackage_t packet, uint16_t _tempData);
-void SensorDataPackage_setHumidity(SensorDataPackage_t packet, uint16_t _humidityData);
+float SensorDataPackage_getTemperature(SensorDataPackage_t packet);
+float SensorDataPackage_getHumidity(SensorDataPackage_t packet);
+void SensorDataPackage_setTemperature(SensorDataPackage_t packet, float _tempData);
+void SensorDataPackage_setHumidity(SensorDataPackage_t packet, float _humidityData);
 //-----------------------------------------------------------------
 
 

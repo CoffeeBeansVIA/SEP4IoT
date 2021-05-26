@@ -4,7 +4,23 @@
 
 
 //----------------------------FUNCTIONS----------------------------
-static void inline _setup_temperature_humidity_driver()
+void temperatureHumiditySensor_create()
+{
+
+	//starting the drivers
+	_setup_temperature_humidity_driver();
+
+
+	xTaskCreate(
+	HumidityTemperatureSensorTask,
+	"Humidity Temperature Sensor",
+	configMINIMAL_STACK_SIZE,
+	NULL,
+	3,
+	NULL);
+}
+
+void _setup_temperature_humidity_driver()
 {
 	//create driver
 	hih8120_driverReturnCode_t rc = hih8120_initialise();
@@ -63,24 +79,7 @@ void HumidityTemperatureSensorTask(void *pvParameters)
 			//setting the bit to true to signalize that the measurement was completed
 			xEventGroupSetBits(readyEventGroup, HUMIDITY_TEMPERATURE_READY_BIT);
 		}
-		xSemaphoreGive(temperatureMutex);
 	}
-}
-
-void temperatureHumiditySensor_create()
-{
-
-	//starting the drivers
-	_setup_temperature_humidity_driver();
-
-
-	xTaskCreate(
-	HumidityTemperatureSensorTask,
-	"Humidity Temperature Sensor",
-	configMINIMAL_STACK_SIZE,
-	NULL,
-	3,
-	NULL);
 }
 
 float humidityTemperatureSensor_getTemperature()

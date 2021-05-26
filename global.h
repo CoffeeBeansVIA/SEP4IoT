@@ -21,11 +21,11 @@
 // Mutexes
 SemaphoreHandle_t sysInitMutex;
 SemaphoreHandle_t measureCo2Mutex;
+SemaphoreHandle_t measureTempMutex;
 SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 SemaphoreHandle_t windowMutex;
-SemaphoreHandle_t temperatureMutex;
 //SemaphoreHandle_t DownLinkReceiveUpdateMutex;
 
 void mutexPuts(char* str);
