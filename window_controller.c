@@ -4,11 +4,7 @@
 
 //----------------------------FUNCTIONS----------------------------
 void rcServoTask(void *pvParameters)
-{
-	rc_servo_initialise();
-	
-	Configuration_t configuration = Configuration_create();
-	
+{	
 	for (;;)
 	{
 	
@@ -40,6 +36,10 @@ void rcServoTask(void *pvParameters)
 
 void rcServoTask_create()
 {
+	rc_servo_initialise();
+	
+	Configuration_t configuration = Configuration_create();
+	
 	xTaskCreate(
 	rcServoTask, 
 	RC_SERVO_TASK_NAME, 

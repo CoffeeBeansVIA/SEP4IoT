@@ -6,6 +6,8 @@
 //----------------------------STRUCT------------------------------
 typedef struct SensorDataPackage {
 	uint16_t co2Data;
+	uint16_t tempData;
+	uint16_t humidityData;
 } SensorDataPackage_st;
 //-----------------------------------------------------------------
 
@@ -32,5 +34,19 @@ void SensorDataPackage_setCO2(SensorDataPackage_t packet, uint16_t _co2Data){
 
 uint16_t SensorDataPackage_getCO2(SensorDataPackage_t packet){
 	return packet->co2Data;
+}
+
+//new sensors
+uint16_t SensorDataPackage_getTemperature(SensorDataPackage_t packet){
+	return packet->tempData;
+}
+uint16_t SensorDataPackage_getHumidity(SensorDataPackage_t packet){
+	return packet->humidityData;
+}
+void SensorDataPackage_setTemperature(SensorDataPackage_t packet, uint16_t _tempData){
+	packet->tempData = _tempData;
+}
+void SensorDataPackage_setHumidity(SensorDataPackage_t packet, uint16_t _humidityData){
+	packet->humidityData = _humidityData;
 }
 //-----------------------------------------------------------------

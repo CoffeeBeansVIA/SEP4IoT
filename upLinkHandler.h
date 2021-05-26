@@ -4,6 +4,7 @@
 //----------------------------INCLUDES----------------------------
 #include "global.h"
 #include "co2Sensor.h"
+#include "humidityTemperatureSensor.h"
 
 //-----------PARAMETERS FOR OTAA JOIN (FROM IHA)-------------------
 #define LORA_appEUI "926F9B5931FCA94C"

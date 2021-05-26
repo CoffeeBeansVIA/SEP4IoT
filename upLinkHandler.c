@@ -30,6 +30,7 @@ void UL_receive_task( void *pvParameters )
 	_lora_setup();
 	
 	taskEXIT_CRITICAL();
+	
 	 for(;;){
 		 
 		 xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
@@ -49,11 +50,22 @@ void UL_receive_task( void *pvParameters )
 		 
 		uint16_t co2_ppm = getCO2();
 		
+		//new sensors
+		uint16_t humidity_ppm = humidityTemperatureSensor_getHumidity();
+		int16_t temp_ppm = humidityTemperatureSensor_getTemperature();
+		
 		lora_driver_payload_t _uplink_payload;
 		
 		_uplink_payload.bytes[0] = co2_ppm >> 8;
 		_uplink_payload.bytes[1] = co2_ppm & 0xFF;
-		_uplink_payload.len = 2;
+		
+		//new sensors
+		_uplink_payload.bytes[2] = humidity_ppm >> 8;
+		_uplink_payload.bytes[3] = humidity_ppm & 0xFF;
+		_uplink_payload.bytes[4] = temp_ppm >> 8;
+		_uplink_payload.bytes[5] = temp_ppm & 0xFF;
+				
+		_uplink_payload.len = 6;
 		_uplink_payload.portNo = 2;
 
 		status_leds_shortPuls(led_ST4);  // OPTIONAL

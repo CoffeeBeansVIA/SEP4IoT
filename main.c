@@ -7,6 +7,7 @@
 #include "co2Sensor.h"
 #include "upLinkHandler.h"
 #include "DownLinkHandler.h"
+#include "humidityTemperatureSensor.h"
 
 /*-----------------------PROCEDURES----------------------*/
 void create_semaphores(void){
@@ -30,11 +31,7 @@ void create_semaphores(void){
 		UpLinkReceiveMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake(UpLinkReceiveMutex, portMAX_DELAY);
 	}
-	/*if ( NULL == DownLinkReceiveUpdateMutex ){
-		DownLinkReceiveMutex = xSemaphoreCreateMutex();
-		xSemaphoreTake(DownLinkReceiveMutex, portMAX_DELAY);
-	}
-	*/
+	
 	
 	if(NULL == putsMutex){
 		putsMutex = xSemaphoreCreateMutex();
@@ -43,6 +40,10 @@ void create_semaphores(void){
 	if(NULL == windowMutex){
 		windowMutex = xSemaphoreCreateMutex();
 		xSemaphoreTake( windowMutex,portMAX_DELAY);
+	}
+	if(NULL == temperatureMutex){
+		temperatureMutex = xSemaphoreCreateMutex();
+		xSemaphoreTake( temperatureMutex,portMAX_DELAY);
 	}
 }
 
@@ -85,12 +86,15 @@ void UL_handler_send( void *pvParameters )
 	const TickType_t x100ms = pdMS_TO_TICKS( 100 );
 	
 	for(;;){
-		xSemaphoreTake( measureCo2Mutex , portMAX_DELAY);
+		xSemaphoreTake( temperatureMutex , portMAX_DELAY);
 		size_t xBytesSent;
 		// Payload
 		SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
 		
-		SensorDataPackage_setCO2(sensorDataPackage,getCO2());/*JULIA PUT YOUR DATA HERE - CO2Sensor.getCO2()*/
+		SensorDataPackage_setCO2(sensorDataPackage,getCO2());
+		//new sensors
+		SensorDataPackage_setHumidity(sensorDataPackage,humidityTemperatureSensor_getHumidity());
+		SensorDataPackage_setTemperature(sensorDataPackage, humidityTemperatureSensor_getTemperature());
 		
 		int size = sizeof( sensorDataPackage );
 		
@@ -119,7 +123,11 @@ void UL_handler_send( void *pvParameters )
 			if(xReceivedBytes > 0){
 				char buff [63];
 				sprintf(buff, "UL_handler_send Co2 = (%d) -> OK", SensorDataPackage_getCO2(receivedDataPackage));
+				//new sensors
+				sprintf(buff, "UL_handler_send Humidity = (%d) -> OK", SensorDataPackage_getHumidity(receivedDataPackage));
+				sprintf(buff,"UL_handler_send Temperature = (%d) -> OK", SensorDataPackage_getTemperature(receivedDataPackage));
 				mutexPuts(buff);
+				
 				xSemaphoreGive(UpLinkSendMutex);
 			}
 			SensorDataPackage_free(receivedDataPackage);
@@ -172,6 +180,7 @@ void initialiseSystem( void ){
 	// Create LoRaWAN task and start it up with priority 3
 	
 	CO2_handler_create();
+	temperatureHumiditySensor_create();
 	create_tasks();
 	UL_handler_create();
 	DL_handler_create();

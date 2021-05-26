@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdio_driver.h>
 #include <avr/io.h>
@@ -24,15 +25,20 @@ SemaphoreHandle_t UpLinkSendMutex;
 SemaphoreHandle_t UpLinkReceiveMutex;
 SemaphoreHandle_t putsMutex;
 SemaphoreHandle_t windowMutex;
+SemaphoreHandle_t temperatureMutex;
 //SemaphoreHandle_t DownLinkReceiveUpdateMutex;
 
 void mutexPuts(char* str);
 
 // Event groups
 EventGroupHandle_t measureEventGroup;
-#define BIT_TASK_CO2_MEASURE (1<<0)
 EventGroupHandle_t readyEventGroup;
+
+#define BIT_TASK_CO2_MEASURE (1<<0)
 #define BIT_TASK_CO2_READY (1<<1)
+
+#define HUMIDITY_TEMPERATURE_MEASURE_BIT (1 << 0)
+#define HUMIDITY_TEMPERATURE_READY_BIT (1 << 1)
 
 // MessageBuffers
 int UpLinkSize;

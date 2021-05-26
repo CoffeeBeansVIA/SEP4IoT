@@ -45,20 +45,6 @@ void Configuration_setCO2MaxFluct(Configuration_t config, uint16_t _co2MaxFluct)
 	sprintf(buff, "Co2 Maximum Fluctuation set to %d \n",_co2MaxFluct);
 	mutexPuts(buff);
 }
-
-void Configuration_setTemperature(Configuration_t config, uint16_t _temperatureData){
-	config->temperatureData = _temperatureData;
-}
-void Configuration_setTemperatureMaxFluct(Configuration_t config, uint16_t _temperatureMaxFluct){
-	config->temperatureMaxFluct = _temperatureMaxFluct;
-}
-void Configuration_setHumidity(Configuration_t config, uint16_t _humidityData){
-	config->humidityData = _humidityData;
-}
-void Configuration_setHumidityMaxFluct(Configuration_t config, uint16_t _humidityMaxFluct){
-	config->humidityData = _humidityMaxFluct;
-}
-
 uint16_t Configuration_getCO2(Configuration_t config){
 	return config->co2Data;
 }
@@ -68,4 +54,31 @@ uint16_t Configuration_getTemperature(Configuration_t config){
 uint16_t Configuration_getHumidity(Configuration_t config){
 	return config->humidityData;
 }
+//new sensors
+void Configuration_setTemperature(Configuration_t config, uint16_t _temperatureData){
+	config->temperatureData = _temperatureData;
+	char buff[63];
+	sprintf(buff, "Temperature set to %d \n",_temperatureData);
+	mutexPuts(buff);
+}
+void Configuration_setTemperatureMaxFluct(Configuration_t config, uint16_t _temperatureMaxFluct){
+	config->temperatureMaxFluct = _temperatureMaxFluct;
+	char buff[63];
+	sprintf(buff, "Temperature Maximum Fluctuation set to %d \n",_temperatureMaxFluct);
+	mutexPuts(buff);
+}
+void Configuration_setHumidity(Configuration_t config, uint16_t _humidityData){
+	config->humidityData = _humidityData;
+	char buff[63];
+	sprintf(buff, "Humidity set to %d \n",_humidityData);
+	mutexPuts(buff);
+}
+void Configuration_setHumidityMaxFluct(Configuration_t config, uint16_t _humidityMaxFluct){
+	config->humidityData = _humidityMaxFluct;
+	char buff[63];
+	sprintf(buff, "Humidity Maximum Fluctuation set to %d \n",_humidityMaxFluct);
+	mutexPuts(buff);
+}
+
+
 //-----------------------------------------------------------------
