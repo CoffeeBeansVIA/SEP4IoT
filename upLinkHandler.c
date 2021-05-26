@@ -27,12 +27,13 @@ void UL_receive_task( void *pvParameters )
 
 	lora_driver_flushBuffers(); // get rid of first version string from module after reset!
 
-	_lora_setup();
-	
+	_lora_setup();	
 	taskEXIT_CRITICAL();
 	
+	vTaskDelay(pdMS_TO_TICKS(500));
+	
 	//sending 'hardware started message'
-//lora_driver_payload_t _welcome_payload;
+ // lora_driver_payload_t _welcome_payload;
 	
 	//_welcome_payload.bytes[0] = 100 >> 8;
 	//_welcome_payload.bytes[1] = 100 & 0xFF;
