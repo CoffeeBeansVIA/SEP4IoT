@@ -230,7 +230,7 @@ int main(void){
 	
 	xSemaphoreGive(windowMutex);
 	
-	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler.
+	vTaskStartScheduler(); // Initialize and run the freeRTOS scheduler (and run out of memory)
 	
 	//Execution will never reach here.
 }
