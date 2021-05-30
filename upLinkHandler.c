@@ -7,6 +7,14 @@ static char _out_buf[100];
 void UL_handler_create(){
 
 	xTaskCreate(
+	Welcome_task
+	,  "Welcome Task"
+	,  configMINIMAL_STACK_SIZE
+	,  NULL
+	,  5
+	,  NULL );
+
+	xTaskCreate(
 	UL_receive_task
 	,  "UpLink Handler Receive"
 	,  configMINIMAL_STACK_SIZE
@@ -15,8 +23,7 @@ void UL_handler_create(){
 	,  NULL );
 }
 
-void UL_receive_task( void *pvParameters )
-{
+void Welcome_task(void *pvParams){
 	taskENTER_CRITICAL();
 	// Hardware reset of LoRaWAN transceiver
 	lora_driver_resetRn2483(1);
@@ -27,11 +34,28 @@ void UL_receive_task( void *pvParameters )
 
 	lora_driver_flushBuffers(); // get rid of first version string from module after reset!
 
-	_lora_setup();
+	_lora_setup();	
 	
 	taskEXIT_CRITICAL();
-	 for(;;){
-		 
+	
+	//sending 'hardware started message'
+	lora_driver_payload_t _welcome_payload;
+				
+	uint16_t val = 100;
+	_welcome_payload.bytes[0] = val >> 8;
+	_welcome_payload.bytes[1] = val & 0xFF;
+	_welcome_payload.len = 2;
+	_welcome_payload.portNo = 3;
+				
+	status_leds_shortPuls(led_ST4);  // OPTIONAL
+			
+	printf("Welcome Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_welcome_payload)));
+	vTaskSuspend(NULL);
+}
+
+void UL_receive_task( void *pvParameters )
+{	
+	 for(;;){ 
 		 xSemaphoreTake( UpLinkSendMutex , portMAX_DELAY);
 		 
 		 SensorDataPackage_t sensorDataPackage = SensorDataPackage_create();
@@ -58,34 +82,8 @@ void UL_receive_task( void *pvParameters )
 
 		status_leds_shortPuls(led_ST4);  // OPTIONAL
 		printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
+		
 		xSemaphoreGive(UpLinkReceiveMutex);
-			 
-		 
-		 /*if( xReceivedBytes > 0 ){
-			 // The sensorDataPackage contains the message to be transmitted. Serialize it here and send it using LoRaWan.
-			 mutexPuts("UL_handler_receive -> OK");
-			 //mutexPuts(xReceivedBytes);
-			 
-			 // take the data out of the packet
-			 uint16_t co2_ppm = getCO2();
-			 
-			 // free up memory
-			 SensorDataPackage_free(sensorDataPackage);
-			 
-			 lora_driver_payload_t _uplink_payload;
-			 
-			 _uplink_payload.bytes[0] = co2_ppm >> 8;
-			 _uplink_payload.bytes[1] = co2_ppm & 0xFF;
-			 _uplink_payload.len = 2;
-
-			 status_leds_shortPuls(led_ST4);  // OPTIONAL
-			 printf("Upload Message >%s<\n", lora_driver_mapReturnCodeToText(lora_driver_sendUploadMessage(false, &_uplink_payload)));
-			 vTaskDelay(300000);
-			 xSemaphoreGive(UpLinkReceiveMutex);
-			 }else{
-			 // Wait 2.5 minutes to retry
-			// vTaskDelay(pdMS_TO_TICKS(150000));
-		 }*/
 	 }
 
  }

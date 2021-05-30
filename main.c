@@ -120,9 +120,11 @@ void UL_handler_send( void *pvParameters )
 				char buff [63];
 				sprintf(buff, "UL_handler_send Co2 = (%d) -> OK", SensorDataPackage_getCO2(receivedDataPackage));
 				mutexPuts(buff);
+				SensorDataPackage_free(receivedDataPackage);
 				xSemaphoreGive(UpLinkSendMutex);
 			}
 			SensorDataPackage_free(receivedDataPackage);
+	
 		}
 	}
 }
