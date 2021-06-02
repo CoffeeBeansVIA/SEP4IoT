@@ -1,4 +1,16 @@
-#include "pch.h"
+#include "gtest/gtest.h"
+#include "fff.h"
+#include "FreeRTOS_FFF_MocksDeclaration.h"
+
+DEFINE_FFF_GLOBALS
+
+extern "C" {
+#include <stdio.h>
+#include "../FreeRTOS/src/task.h"
+
+// Header file from the production code project
+#include <upLinkHandler.h>
+}
 
 class ProdTest : public ::testing::Test {
 protected:
